@@ -121,6 +121,14 @@ The theme is intentionally small (~10 PHP files + one stylesheet) and is meant t
 
 ACF fields are exposed natively via `show_in_rest: true` set in `wp-content/mu-plugins/acf-fields.php`.
 
+## Brand listing API
+
+`GET /api/brands/` is public. Parameters: `industry` (repeatable slug), `ordering`, `page`, `page_size`. Its snippet rule is below; the full contract is documented under R21.
+
+### Top review snippet
+
+The "top" review of a brand is the one with the **highest rating**; ties are broken by the **newest** `published_at` (then highest id). `top_review_snippet` is that review's body with HTML tags removed and whitespace collapsed, cut to the **first 140 characters**. A brand with no reviews returns `null` for `top_review_snippet` and `average_rating`, and `0` for `review_count`.
+
 ## Notes for the maintainer
 
 - The `wp-content/plugins/advanced-custom-fields/` and `wp-content/plugins/wordpress-seo/` plugin code is GPL and committed to the repo so candidates don't need internet on first boot.
