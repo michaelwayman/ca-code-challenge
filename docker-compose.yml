@@ -189,7 +189,7 @@ services:
     volumes:
       - ./scripts/browser:/work
       - ./scripts/browser-out:/out
-    entrypoint: ["sh", "-c", "npm install --no-audit --no-fund >/dev/null 2>&1 && node check.mjs"]
+    entrypoint: ["sh", "-c", "npm install --no-audit --no-fund >/dev/null 2>&1 && node check.mjs && node responsive.mjs"]
 
 volumes:
   db_data:

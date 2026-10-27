@@ -9,3 +9,13 @@
 .brand-list button:focus-visible,
 .brand-list a:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 2px; }
 .brand-list .card:focus-within { outline: 3px solid #1d4ed8; outline-offset: 2px; }
+
+/* Responsive (R11). Card columns come from .grid in theme.css (auto-fill, one column under 640px). */
+.brand-list-controls label { display: flex; align-items: center; gap: 6px; }
+.brand-list-controls select,
+.brand-list-error button { min-height: 44px; }
+@media (max-width: 640px) {
+  .brand-list-controls { flex-direction: column; gap: 12px; }
+  .brand-list-controls label { flex-direction: column; align-items: stretch; }
+  .brand-list-controls select { margin-left: 0; width: 100%; max-width: 100%; }
+}
