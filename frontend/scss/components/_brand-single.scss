@@ -1,0 +1,69 @@
+/* Brand single */
+.brand-hero {
+  background: #ffffff;
+  border-bottom: 1px solid var(--color-border);
+  padding: 40px 0;
+}
+.brand-hero h1 {
+  font-size: 2rem;
+  margin: 0 0 12px;
+  letter-spacing: -0.02em;
+}
+.brand-hero .brand-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  color: var(--color-muted);
+  font-size: 0.95rem;
+  margin-top: 14px;
+}
+.brand-hero .brand-meta strong { color: var(--color-text); }
+
+.brand-body {
+  padding: 32px 0 48px;
+}
+.brand-body .content {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 28px;
+  font-size: 1.02rem;
+}
+
+.reviews-section {
+  padding: 24px 0 64px;
+}
+.reviews-section h2 {
+  font-size: 1.4rem;
+  margin: 0 0 18px;
+}
+
+.review-item {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 22px;
+  margin-bottom: 16px;
+}
+.review-item .review-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+.review-item h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.review-item h3 a { color: var(--color-text); }
+.review-item .review-byline {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  margin: 4px 0 12px;
+}
+.review-item .review-body {
+  color: #1f2937;
+  font-size: 0.95rem;
+}

@@ -1,0 +1,7 @@
+// Mobile overrides (max-width 640px).
+@media (max-width: 640px) {
+  .hero { padding: 40px 0; }
+  .hero h1 { font-size: 1.75rem; }
+  .site-header .container { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .grid { grid-template-columns: 1fr; }
+}

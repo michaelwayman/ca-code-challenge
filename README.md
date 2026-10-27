@@ -22,6 +22,17 @@ After ~20 seconds:
 
 Docker is the only host prerequisite. Host ports are set in `.env` (`WP_PORT`, `PMA_PORT`, `APP_PORT`, `AUTH_PORT`); change them if one clashes. Node tooling (bundle, SCSS) runs in the `node` service under the `tools` profile, mounted at `frontend/`: `make node ARGS="npm --version"`. Check status with `docker compose ps`; every service should be running or healthy.
 
+### Compiling the SCSS
+
+The stylesheet source lives in `frontend/scss/`. `main.scss` is the entry file and pulls in partials in `tokens/`, `base/`, `layout/` and `components/`; each commented section of `reference/theme.css` maps to one partial. Compile with Dart Sass in the node container:
+
+```
+make node ARGS="npm install"      # first time only
+make node ARGS="npm run build:css"
+```
+
+This writes `app/static/css/theme.css`, which `base.html` links. Do not edit that file by hand and do not edit `reference/theme.css`. To add a component, create `frontend/scss/components/_name.scss` and add an `@use` line to `main.scss`; use the custom properties from `tokens/_tokens.scss` rather than literal colours.
+
 The DB is auto-imported from `db/dump.sql` on first boot. No manual setup required for candidates.
 
 ## Stack

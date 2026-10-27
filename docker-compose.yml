@@ -175,6 +175,7 @@ services:
     volumes:
       - ./frontend:/work
       - ./app/static/dist:/work/dist
+      - ./app/static/css:/out
 
   browser:
     image: mcr.microsoft.com/playwright:v1.49.1-noble
