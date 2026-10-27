@@ -137,6 +137,55 @@ Auth outage (auth container stopped): the main app does not depend on it, so not
 
 Revocation and role changes: there is no revocation list and no refresh token. A token cannot be revoked before it expires; the short 15-minute lifetime is the revocation mechanism, so a removed or demoted user keeps their old access for up to 15 minutes. A role change applies at the user's next login (a new token carries the new `role`); until then the old token keeps its old role. Rotating the signing key (redeploy auth with the new private key and the main app with the new public key) invalidates all outstanding tokens at once.
 
+## Modeling decisions, hindsight and AI defaults
+
+> **Draft for the candidate to confirm.** Everything below is taken from the recorded decisions (`SPEC.md`), the build log and the code. Statements marked *(inferred)* are not in the record. The "what I would do differently" and "kept over my preference" lists could only be drafted from the record, not from the candidate's own opinions, so edit them before submitting.
+
+This is a dev/demo take-home, not a production deployment.
+
+### Modeling decisions
+
+- **Rows are keyed on the WP ID.** `Industry`, `Reviewer`, `Brand` and `Review` each carry the WP post, term or user ID, and `import_wp` upserts on it. That is what makes the import re-runnable (C2). Slugs are copied unchanged so URLs match the WP permalinks (C3).
+- **Average rating is derived, not stored.** `Brand.average_rating` is an aggregate over reviews, rounded to 1 decimal. WordPress stores `average_rating` as an ACF field. That field is not imported, so the API value can differ from what WP displays.
+- **Reviewers are a `Reviewer` model**, not Django users, because the main app stores no users, passwords or roles (C4). Users live only in the auth service.
+- **Postmeta:** the ACF fields (`website_url`, `founded_year`, `headquarters`) are columns, the `_yoast_wpseo_*` keys are kept as JSON on `Brand.seo` and not rendered, and other WP-internal keys are dropped.
+- **`short_description` is a derived-then-editable field.** All 5 seeded brands have an empty excerpt, so it is the first 200 characters of the stripped content, cut at a word boundary. It is stored so an editor can PATCH it.
+- **Top review** is the highest rating, ties broken by newest, shown as the first 140 characters of the body.
+- **Roles:** `reader` and `editor`. WP administrator and editor become `editor`. Tokens are 15-minute RS256 JWTs verified locally with a public key, with no refresh token and no revocation list.
+
+### What I would do differently with more time
+
+From the record and the code:
+
+- **Make edits survive a re-import.** `import_wp` rewrites `short_description` on every run, so an editor PATCH is lost on the next import. Fixing it needs an "edited by editor" marker or a separate override column. This was found while building R16 and documented, not fixed.
+- **Reconcile the rating with WordPress.** Decide whether the imported WP `average_rating` should be kept for comparison, or the difference documented in the API.
+- **Handle deletes.** The import never deletes, so content removed in WP stays in the app database.
+- **Sanitise HTML.** The templates render WP content with `|safe` (`brand.content`, `review.body`). That is acceptable only because the content is trusted seed data in a dev/demo build (C13). Use an allow-list sanitiser or render only vetted markup before anything real.
+- **Add a login UI, refresh tokens and revocation, and a JWKS endpoint** for key rotation. All are out of scope or deferred in the spec (O5, O6; key rotation is by redeploy).
+- **Look at the scale of the import.** It is a single transaction reading MariaDB directly. *(inferred: at 100x it would need batching; the record asks the question in Q10 but this README does not measure it)*
+- **Cover the framework-default behaviours in tests.** Several assumptions below (A8, A9, A10, A11, A12, A14) are still marked unvalidated in the spec.
+
+### AI defaults I accepted
+
+These are the places where the build agent chose a behaviour the spec did not cover and it was kept. Each is logged in the build inbox. The reason given is the one recorded; where none was recorded it says so. *(The candidate's own preference in each case is not in the record: fill in which of these you would have chosen differently.)*
+
+| Default | Why it was kept |
+|---|---|
+| Industry returned as its name string (`null` if none); snippet strips HTML tags and collapses whitespace before cutting to 140 | Not recorded beyond the assumption (I1) |
+| Listing: `page_size` default 10 and uncapped, default order by name with ties by name then id, nulls last for rating, past-the-end page returns 200 with empty results, several industry slugs OR-ed, unknown slug matches nothing, bad `ordering` or `page` returns Ninja's 422 | Framework defaults accepted as assumptions A8, A10, A11, A14 (I2) |
+| `BrandList` sits on the homepage, industry options come from Django via `json_script` (no industries endpoint), page 1 only with no pagination UI | Keeps the stack small (I3, A13). *(inferred)* |
+| Built bundle `app/static/dist/brandlist.js` is committed | A clean clone then works with no build step (I3) |
+| axe test disables colour contrast in jsdom, contrast is checked in the real browser container instead; Playwright 1.49.1 added as a compose `browser` service | jsdom cannot compute contrast (I4) |
+| Editor satisfies a reader requirement (role hierarchy) | Not recorded beyond the assumption (I8) |
+| `verify_token` also rejects tokens whose `exp - iat` is not 900 and non-integer `iat` or `exp`; signing stays in the auth service, not the library | Not recorded beyond the assumption (I9) |
+| A missing signing key returns 503 on login, not 500 or 401 | Not recorded beyond the assumption (I11). The README Login section documents it |
+| `Brand.short_description` widened from 255 to 500 (migration `0002`) | So the 500-character PATCH limit is storable (I12) |
+| Brand detail page renders `short_description`, which it did not before | Not recorded beyond the assumption (I13) |
+| PATCH strips body whitespace before the 1-500 length check and returns the full brand row | Not recorded beyond the assumption (I14) |
+| PATCH checks the token before the path, so 401 and 403 come before 404, and request-body validation (422) runs before the handler. A PATCH with an unknown slug and an invalid body therefore returns 422, not 404 *(inferred from Ninja's behaviour, not covered by a test)* | Framework default; the tests cover 401/403/404 with a valid body and 422 with a known slug |
+
+Decisions the candidate made explicitly (the Q-items in the spec, plus I5 to I7: the private key in `AUTH_JWT_PRIVATE_KEY`, library built before the login endpoint, the token claim shapes) are not listed above because they were not AI defaults.
+
 ## Stack
 
 | Service     | Image                            | Port  | Purpose                                |
