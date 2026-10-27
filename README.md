@@ -17,6 +17,10 @@ After ~20 seconds:
 - WP admin:    <http://localhost:8080/wp-admin> (`admin` / `admin`)
 - phpMyAdmin:  <http://localhost:8081>
 - REST root:   <http://localhost:8080/wp-json/wp/v2/>
+- Main app:    <http://localhost:8000> (health: `/health/`)
+- Auth service: <http://localhost:8001> (health: `/health/`)
+
+Docker is the only host prerequisite. Host ports are set in `.env` (`WP_PORT`, `PMA_PORT`, `APP_PORT`, `AUTH_PORT`); change them if one clashes. Node tooling (bundle, SCSS) runs in the `node` service under the `tools` profile, mounted at `frontend/`: `make node ARGS="npm --version"`. Check status with `docker compose ps`; every service should be running or healthy.
 
 The DB is auto-imported from `db/dump.sql` on first boot. No manual setup required for candidates.
 
@@ -28,6 +32,10 @@ The DB is auto-imported from `db/dump.sql` on first boot. No manual setup requir
 | `wordpress` | `wordpress:6.9-php8.3-apache`    | 8080  | WP + Apache + PHP                      |
 | `wpcli`     | `wordpress:cli-php8.3`           | -     | Helper for re-seeding / dumping        |
 | `phpmyadmin`| `phpmyadmin:5`                   | 8081  | Optional DB browser                    |
+| `app`       | `python:3.12-slim` (Django 5.2)  | 8000  | Main app                               |
+| `app-db`    | `postgres:16`                    | -     | Main app database                      |
+| `auth`      | `python:3.12-slim` (Django 5.2)  | 8001  | Auth service (separate project)        |
+| `auth-db`   | `postgres:16`                    | -     | Auth service database                  |
 
 ## What's committed
 

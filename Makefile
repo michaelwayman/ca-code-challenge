@@ -2,11 +2,11 @@ SHELL := /bin/bash
 COMPOSE := docker compose
 WPCLI := $(COMPOSE) run --rm wpcli
 
-.PHONY: help up down restart logs reset wp bootstrap dump status
+.PHONY: node help up down restart logs reset wp bootstrap dump status
 
 help:
 	@echo "Targets:"
-	@echo "  up              Start db + wordpress + phpmyadmin"
+	@echo "  up              Start the whole stack"
 	@echo "  down            Stop containers (preserve data)"
 	@echo "  reset           Stop containers AND wipe DB volume (full cold start on next 'up')"
 	@echo "  logs            Tail wordpress + db logs"
@@ -16,7 +16,7 @@ help:
 	@echo "  status          Show running services"
 
 up:
-	$(COMPOSE) up -d db wordpress phpmyadmin
+	$(COMPOSE) up -d --build
 
 down:
 	$(COMPOSE) down
@@ -41,3 +41,7 @@ dump:
 
 status:
 	$(COMPOSE) ps
+
+# Node tooling (bundle, SCSS) runs in Docker: make node ARGS="npm run build"
+node:
+	$(COMPOSE) run --rm node $(ARGS)

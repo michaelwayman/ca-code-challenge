@@ -23,7 +23,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "${WP_PORT:-8080}:80"
     environment:
       WORDPRESS_DB_HOST: db:3306
       WORDPRESS_DB_NAME: ${WORDPRESS_DB_NAME:-wp}
@@ -80,13 +80,96 @@ services:
         condition: service_healthy
     restart: unless-stopped
     ports:
-      - "8081:80"
+      - "${PMA_PORT:-8081}:80"
     environment:
       PMA_HOST: db
       PMA_USER: ${WORDPRESS_DB_USER:-wp}
       PMA_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wp}
       UPLOAD_LIMIT: 256M
 
+  app-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${APP_DB_NAME:-app}
+      POSTGRES_USER: ${APP_DB_USER:-app}
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:-app}
+    volumes:
+      - app_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  auth-db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${AUTH_DB_NAME:-auth}
+      POSTGRES_USER: ${AUTH_DB_USER:-auth}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:-auth}
+    volumes:
+      - auth_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    build: ./app
+    restart: unless-stopped
+    depends_on:
+      app-db:
+        condition: service_healthy
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    environment:
+      POSTGRES_HOST: app-db
+      POSTGRES_DB: ${APP_DB_NAME:-app}
+      POSTGRES_USER: ${APP_DB_USER:-app}
+      POSTGRES_PASSWORD: ${APP_DB_PASSWORD:-app}
+    volumes:
+      - ./app:/srv
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/health/')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  auth:
+    build: ./auth
+    restart: unless-stopped
+    depends_on:
+      auth-db:
+        condition: service_healthy
+    ports:
+      - "${AUTH_PORT:-8001}:8000"
+    environment:
+      POSTGRES_HOST: auth-db
+      POSTGRES_DB: ${AUTH_DB_NAME:-auth}
+      POSTGRES_USER: ${AUTH_DB_USER:-auth}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:-auth}
+    volumes:
+      - ./auth:/srv
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/health/')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  node:
+    image: node:22-slim
+    profiles: ["tools"]
+    working_dir: /work
+    volumes:
+      - ./frontend:/work
+
 volumes:
   db_data:
   wp_files:
+  app_db_data:
+  auth_db_data:
