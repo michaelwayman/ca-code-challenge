@@ -50,7 +50,7 @@ It prints `User created=N updated=N unchanged=N`; a second run creates nothing. 
 
 `POST /api/auth/login` takes JSON `username` and `password` and returns `access_token`, `token_type` (`Bearer`) and `expires_in` (900). Tokens are RS256 JWTs with claims `iss` (`ca-auth`), `sub` (auth user id), `role` (`reader` or `editor`), `iat` and `exp` (`exp = iat + 900`); claim names come from `ca_auth_lib`. Wrong credentials return 401 with no token. There is no login UI and no refresh token.
 
-The auth service signs with the private key in env var `AUTH_JWT_PRIVATE_KEY` (PEM) and never generates one: if it is unset, login returns 503 with an error. Generate a dev keypair once (also writes `APP_JWT_PUBLIC_KEY`, which the main app will read later; `.env` is git-ignored):
+The auth service signs with the private key in env var `AUTH_JWT_PRIVATE_KEY` (PEM) and never generates one: if it is unset, login returns 503 with an error. Generate a dev keypair once (also writes `APP_JWT_PUBLIC_KEY`, which the main app reads to verify tokens; `.env` is git-ignored):
 
 ```
 make jwt-keys
@@ -62,6 +62,19 @@ curl -s -X POST http://localhost:8001/api/auth/login \
 ```
 
 Auth tests: `docker compose run --rm auth python manage.py test`.
+
+## Token verification and auth outage behaviour
+
+**The main app verifies tokens locally; it never calls the auth service.** `PATCH /api/brands/{slug}/` checks the RS256 signature, `iss`, `exp` and the `role` claim with `ca_auth_lib` against the public key in env var `APP_JWT_PUBLIC_KEY` (written to `.env` by `make jwt-keys`). Why: the main app needs only the public key, so it has no runtime dependency on the auth service and no per-request network hop, and an auth outage cannot take the main app down. The cost is that the main app cannot see revocations or role changes until a token expires (see below).
+
+Auth outage (auth container stopped): the main app does not depend on it, so nothing changes for it.
+
+- Public endpoints stay up: `GET /api/brands/`, the server-rendered pages (`/`, `/brand/<slug>/`, review pages) and `/health/` return 200.
+- `PATCH /api/brands/{slug}/` with an editor token issued before the outage and not yet expired still succeeds (200). With no token, a malformed token or an expired token it returns 401; with a valid reader token it returns 403. These do not change during an outage.
+- Only getting a new token fails: `POST /api/auth/login` on the auth service is unreachable, so nobody can log in until it is back. Tokens expire 15 minutes after issue, so after that window an outage means no one can write until auth returns.
+- If `APP_JWT_PUBLIC_KEY` is empty in the main app, every `PATCH` returns 401 (fail closed); public endpoints are unaffected.
+
+Revocation and role changes: there is no revocation list and no refresh token. A token cannot be revoked before it expires; the short 15-minute lifetime is the revocation mechanism, so a removed or demoted user keeps their old access for up to 15 minutes. A role change applies at the user's next login (a new token carries the new `role`); until then the old token keeps its old role. Rotating the signing key (redeploy auth with the new private key and the main app with the new public key) invalidates all outstanding tokens at once.
 
 ## Stack
 
