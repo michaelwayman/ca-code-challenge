@@ -22,7 +22,7 @@ A8 [unvalidated] Framework defaults for ordering are enough, no explicit default
 A9 [unvalidated] The serializer defaults for row field types and rounding are acceptable and a published schema is not needed
 A10 [unvalidated] The behaviour of multiple industry slugs and of an unknown slug can stay undefined
 A11 [unvalidated] An uncapped page_size and the framework default beyond the last page are acceptable
-A12 [unvalidated] The brand listing will not issue a query per row
+A12 [validated] The brand listing will not issue a query per row
 A13 [unvalidated] Filter and sort state in the component without URL sync is acceptable
 A14 [unvalidated] Framework default error bodies and 401 headers are consistent enough
 A15 [unvalidated] The cut order in T20 is enough without changing priorities, R9 and R11 can stay P0
@@ -36,7 +36,7 @@ R4 [P0 done] Server-rendered homepage, brand detail and review detail pages
 R5 [P0 done] Brand listing endpoint returns card-ready rows
 R6 [P0 done] Brand listing is filterable, sortable and paginated
 R7 [P0] Top review snippet is defined and documented
-R8 [P0] BrandList consumes the API with industry filter and sort control
+R8 [P0 done] BrandList consumes the API with industry filter and sort control
 R9 [P0] BrandList handles loading, empty and error states
 R10 [P0 done] BrandList is keyboard accessible and semantic
 R11 [P0] BrandList is responsive

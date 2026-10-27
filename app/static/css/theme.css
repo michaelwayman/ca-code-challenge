@@ -384,16 +384,41 @@ img {
   display: flex;
   align-items: center;
   gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-muted);
 }
 .brand-list-controls select {
+  appearance: none;
   margin-left: 6px;
-  padding: 6px 10px;
   min-height: 44px;
+  padding: 8px 40px 8px 14px;
+  font: inherit;
+  font-weight: 500;
+  color: var(--color-text);
+  background-color: var(--color-card);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%236b7280' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.brand-list-controls select:hover {
+  border-color: var(--color-primary);
 }
 
 .brand-list blockquote {
   margin: 0;
   font-style: italic;
+}
+
+.brand-list-summary {
+  margin: 0 0 12px;
+  color: var(--color-muted);
+  font-size: 0.85rem;
 }
 
 .brand-list-message {
@@ -413,6 +438,18 @@ img {
   list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.brand-list .pagination .page-numbers {
+  min-height: 44px;
+  padding: 8px 18px;
+  font: inherit;
+  cursor: pointer;
+}
+.brand-list .pagination .page-numbers:disabled {
+  color: var(--color-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .brand-list select:focus-visible,

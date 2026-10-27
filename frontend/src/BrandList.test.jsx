@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
+import { render, screen, waitFor, cleanup, fireEvent } from "@testing-library/react";
 import axe from "axe-core";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import BrandList from "./BrandList.jsx";
@@ -44,4 +44,56 @@ test("error and empty states have zero axe violations", async () => {
   const second = render(ui());
   await waitFor(() => screen.getByText(/No brands match/));
   expect(await violations(second.container)).toEqual([]);
+});
+
+const requested = () => fetch.mock.calls.map((c) => new URLSearchParams(c[0].split("?")[1]));
+
+test("state is restored from the URL and written back to it", async () => {
+  window.history.replaceState(null, "", "/?industry=insurance&ordering=-review_count&page=2");
+  vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({
+    ok: true, json: () => Promise.resolve({ count: 12, results: brands }) })));
+  render(ui());
+  await waitFor(() => screen.getByRole("list", { name: "Brands" }));
+  const q = requested()[0];
+  expect(q.get("industry")).toBe("insurance");
+  expect(q.get("ordering")).toBe("-review_count");
+  expect(q.get("page")).toBe("2");
+  expect(screen.getByLabelText(/Industry/).value).toBe("insurance");
+  expect(window.location.search).toBe("?industry=insurance&ordering=-review_count&page=2");
+});
+
+test("unknown URL values fall back to the defaults", async () => {
+  window.history.replaceState(null, "", "/?industry=nope&ordering=evil&page=-3");
+  render(ui());
+  await waitFor(() => screen.getByRole("list", { name: "Brands" }));
+  const q = requested()[0];
+  expect(q.get("industry")).toBeNull();
+  expect(q.get("ordering")).toBe("name");
+  expect(q.get("page")).toBe("1");
+  expect(window.location.search).toBe("");
+});
+
+test("pagination reaches the next page and shows the total", async () => {
+  window.history.replaceState(null, "", "/");
+  vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({
+    ok: true, json: () => Promise.resolve({ count: 12, results: brands }) })));
+  const { container } = render(ui());
+  await waitFor(() => screen.getByText(/Showing 1-2 of 12 brands/));
+  expect(screen.getByRole("button", { name: "Previous" }).disabled).toBe(true);
+  fireEvent.click(screen.getByRole("button", { name: "Next" }));
+  await waitFor(() => screen.getByText(/Showing 11-12 of 12 brands/));
+  expect(requested().at(-1).get("page")).toBe("2");
+  expect(window.location.search).toBe("?page=2");
+  expect(await violations(container)).toEqual([]);
+});
+
+test("changing the sort returns to page 1", async () => {
+  window.history.replaceState(null, "", "/?page=2");
+  vi.stubGlobal("fetch", vi.fn(() => Promise.resolve({
+    ok: true, json: () => Promise.resolve({ count: 12, results: brands }) })));
+  render(ui());
+  await waitFor(() => screen.getByRole("list", { name: "Brands" }));
+  fireEvent.change(screen.getByLabelText(/Sort by/), { target: { value: "-average_rating" } });
+  await waitFor(() => expect(requested().at(-1).get("ordering")).toBe("-average_rating"));
+  expect(requested().at(-1).get("page")).toBe("1");
 });

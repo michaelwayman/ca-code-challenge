@@ -120,7 +120,7 @@
 - Test: request page_size=100000 and a page past the end and check the response time and status
 
 ### A12. The brand listing will not issue a query per row
-- Status: unvalidated
+- Status: validated
 - Test: count queries for page_size 5 and 50 and assert they are equal
 
 ### A13. Filter and sort state in the component without URL sync is acceptable
@@ -206,7 +206,7 @@
   - row values equal what the brand detail page shows
   - if A3 is proven wrong the industry field is returned as a list named industries
   - industry is the name string or null
-  - the top review snippet strips tags and collapses whitespace before 140 chars
+  - the top review snippet strips tags and collapses whitespace, then keeps the first 24 whole words and appends an ellipsis only when words were dropped, matching wp_trim_words on the WordPress theme
 - Source: brief §Pillar 2
 - Built: 2026-10-27
 
@@ -223,6 +223,7 @@
   - a past-end page returns 200 with empty results
   - several industry slugs are OR-ed and an unknown slug matches nothing
   - invalid ordering or page returns 422
+  - the listing runs a constant number of queries regardless of how many brands exist, asserted in a test
 - Source: brief §Pillar 2
 - Built: 2026-10-27
 
@@ -243,7 +244,12 @@
   - choosing an industry sends a request with the filter and the cards update
   - changing the sort control sends a request with the sort and the card order changes
   - initial render shows the brands returned by GET /api/brands/
+  - the card's industry badge uses the same markup as the WordPress brand archive card (wrapped in its own element) and is sized to its text, not stretched across the card
+  - the industry and sort controls stay native selects, restyled with project tokens (custom arrow, 44px minimum height, visible labels)
+  - the selected industry and ordering are kept in the page URL query string and are restored on reload and when the link is shared
+  - the component lets the user reach every brand beyond the first page (pagination controls) and shows how many brands exist
 - Source: brief §Pillar 3, user choice mounted on a Django page
+- Built: 2026-10-27
 
 ### R9. BrandList handles loading, empty and error states
 - Priority: P0
@@ -949,3 +955,16 @@
 | 2026-10-27 | DONE R12 | mkit |
 | 2026-10-27 | DONE R4 R5 R6 R10 R15 R16 R17 R18 | mkit |
 | 2026-10-27 | RUN done: UUID auth users and triage follow-ups | mkit |
+| 2026-10-27 | ALTER R8 | mkit |
+| 2026-10-27 | ALTER R8 | mkit |
+| 2026-10-27 | DONE R8 | mkit |
+| 2026-10-27 | RUN done: BrandList badge parity and restyled selects | mkit |
+| 2026-10-27 | ALTER R5 | mkit |
+| 2026-10-27 | DONE R5 | mkit |
+| 2026-10-27 | RUN done: Quote cutoff matches WordPress word trimming | mkit |
+| 2026-10-27 | ALTER R8 | mkit |
+| 2026-10-27 | ALTER R8 | mkit |
+| 2026-10-27 | ALTER R6 | mkit |
+| 2026-10-27 | ALTER A12 | mkit |
+| 2026-10-27 | DONE R8 R6 | mkit |
+| 2026-10-27 | RUN done: R8 URL state and pagination, R6 query-count test | mkit |

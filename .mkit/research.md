@@ -23,3 +23,25 @@ How a main-app reviewer (R2, `wp_user_id`) and an auth-service user (R13) refer 
 
 ### Not verified
 - Storing the UUIDs in Postgres `uuid` columns through Django `UUIDField` and Ninja schemas was not tried. It is standard Django behaviour, but it was not run here.
+
+## Making BrandList look polished in plain SCSS (2026-10-27)
+**Answer:** Stay with the project SCSS (Q9, C11) and polish through technique, not a library: a fixed spacing scale, a clear title/meta/body hierarchy on the card, layered shadows, a skeleton loading state, and motion that respects `prefers-reduced-motion`. **Serves/costs:** serves C11 (no new dependency, structure stays in `frontend/scss/`), C12 (every rule is explainable); does not touch O8.
+**Open:** (1) Are new design tokens (spacing scale, a second shadow, a focus colour already added) acceptable alongside the `:root` set copied from `theme.css`? (2) Is a skeleton loading state wanted, replacing the plain "Loading brands…" text? (3) Should there be a visual reference (a site or screenshot) you want it to resemble? None was given.
+
+### Decision this informs
+How much visual refinement to put into `<BrandList />` (R8 to R11) and its SCSS partial `components/_brand-list.scss`, without changing the stack. Steered by C11, C12, C13 (dev/demo) and O8 (no pixel-matching WP).
+
+### Findings
+- Current state: cards use a 1px border, `--radius` 10px, a single small shadow and a 1px hover lift (`frontend/scss/components/_cards.scss`). Stars, badge and the excerpt are already tokenised. Loading is a plain text message (`frontend/src/BrandList.jsx`, status `loading`). There is no skeleton, no `prefers-reduced-motion` rule and no spacing scale; spacing values are literals (16, 20, 22, 24px).
+- Secondary summaries of *Refactoring UI* (not the book itself): hierarchy comes from size, weight and colour, and not all three should change on one element; use a fixed spacing scale (one summary suggests 4, 8, 16, 24, 32, 48, 64px); shadows work as a tight dark layer plus a larger soft layer; design in grayscale first and add colour last; card padding 16-24px and gaps 16-32px with one consistent radius (https://cdn.jsdelivr.net/npm/claude-code-skills@0.5.0/data/skills/ux-ui-design-system/references/refactoring-ui.md, read 2026-10-27). The numbers come from community skill files, not the book.
+- Motion: `prefers-reduced-motion` is Baseline widely available, supported in all browsers since January 2020 (https://developer.mozilla.org/fr/docs/Web/CSS/Reference/At-rules/%40media/prefers-reduced-motion, read 2026-10-27). Keep focus outlines and colour cues, remove decorative movement, and put the override after the normal motion rules (https://www.simplified.guide/css/motion-respect-reduced-preference). Animating only `transform` and `opacity` is cheaper (secondary tutorial).
+- Container queries let a card respond to its own width (`container-type: inline-size`, then `@container`), which suits a card that appears in different column counts (https://frontendchecklist.io/rules/css/container-queries). Not checked against MDN's English page.
+- Loading: PatternFly recommends skeletons when the final layout is known and spinners when it is not (https://patternfly.org/components/skeleton/design-guidelines). BrandList's card layout is known, so a skeleton fits. Nielsen Norman Group's own article was not found; only its video page (https://www.nngroup.com/videos/skeleton-screens-vs-progress-bars-vs-spinners/).
+- Not verified: which component galleries or design systems look best. I did not research Radix, shadcn, MUI or similar, so I make no ranking claim. They are libraries and would change Q9.
+
+### Options
+| Option | What changes | Spec cost |
+|---|---|---|
+| A. Token and hierarchy polish | Add a spacing scale and a layered shadow token; tune card type sizes and the star and badge placement | None (new tokens in `tokens/_tokens.scss`) |
+| B. A plus skeleton and motion | A, plus skeleton cards for loading and a `prefers-reduced-motion` rule; optional container queries on the card | Adds acceptance bullets to R9 and R10 via `/mkit:change` |
+| C. UI library | Replace the select and card styles with a library | Changes Q9, strains C11 and C12; not recommended for the call |

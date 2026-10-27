@@ -18,3 +18,4 @@ Change SPEC.md only through `mkit apply` or `/mkit:change`, never by hand.
 ## Learned rules
 
 - Ask whether the target is dev/demo or production before framing, designing or choosing technology, and record the answer as a constraint. Why: it changes secrets handling, DEBUG, scaling and hosting, and the frame interview skipped it (2026-10-27).
+- Whenever SPEC.md changes (via `mkit apply` or `/mkit:change`), run the readme-coverage skill and fix README.md until it matches. Why: the README answers CHALLENGE.md from the spec's decisions and goes stale when they change (2026-10-27).

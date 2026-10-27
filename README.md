@@ -45,7 +45,7 @@ curl -s 'http://localhost:8000/api/brands/?industry=insurance&industry=retail&or
 
 ### The React component
 
-`BrandList` (filter by industry, sort, paginate) is a Vite + React 18 JavaScript component in `frontend/src/`, mounted into the homepage and styled with the project SCSS. The built bundle `app/static/dist/brandlist.js` and the compiled `app/static/css/theme.css` are committed, so running the app needs no build step. Rebuild after editing `frontend/src/` or `frontend/scss/` (Node runs in the `node` service, no host Node needed):
+`BrandList` (filter by industry, sort, paginate; state kept in the URL query string) is a Vite + React 18 JavaScript component in `frontend/src/`, mounted into the homepage and styled with the project SCSS. The built bundle `app/static/dist/brandlist.js` and the compiled `app/static/css/theme.css` are committed, so running the app needs no build step. Rebuild after editing `frontend/src/` or `frontend/scss/` (Node runs in the `node` service, no host Node needed):
 
 ```
 make node ARGS="npm install"      # first time only
@@ -66,40 +66,67 @@ This writes `app/static/css/theme.css`, which `base.html` links. Do not edit tha
 
 ## Challenge coverage
 
-Every README ask and live-defence question in `CHALLENGE.md`, one row each, with the answer and where it is documented. Maintained with the `readme-coverage` skill. **D** = README deliverable, **P** = documentation ask inside a pillar, **Q** = decision to defend live.
+`D` deliverable, `P` pillar doc ask, `Q` live question.
 
-| # | Challenge asks | Answer | Where |
+### Run and operate
+
+| # | Asks | Answer | Where |
 |---|---|---|---|
-| D1 | How to run the Django app, the auth service and the React component locally | `make up`, `make jwt-keys`, `make up`; main app on 8000, auth on 8001; the component is built with `make node ARGS="npm run build"`, and the built bundle is committed | [Quick start](#quick-start), [Running the main app](#running-the-main-app), [The React component](#the-react-component) |
-| D2 | How to get a token and call the protected endpoint | `POST /api/auth/login` returns an RS256 JWT; send it as `Authorization: Bearer` to `PATCH /api/brands/{slug}/` (editor only) | [Login](#login-auth-service) |
-| D3 | How to run the shared library's tests and how a new version reaches each service | `make lib-test`; bump `pyproject.toml`, change the exact pin in both `requirements.txt`, rebuild | [Tests and the shared library](#tests-and-the-shared-library) |
-| D4 | How to run the migration and re-run it safely | `docker compose run --rm app python manage.py import_wp`; upserts on WP ID in one transaction, so a rerun reports `created=0` | [Migration](#migration-wordpress-to-the-main-app) |
-| D5a | Modeling decisions | Rows keyed on WP ID, derived average rating, `Reviewer` model, typed ACF columns plus Yoast JSON | [Modeling decisions](#modeling-decisions) |
-| D5b | What you would do differently with more time | Edits surviving re-import, rating reconciliation, deletes, HTML sanitising, login UI/refresh/revocation | [What I would do differently](#what-i-would-do-differently-with-more-time) |
-| D5c | Places you chose AI's default over your preference | Table of accepted defaults (I1 to I14) with reasons | [AI defaults I accepted](#ai-defaults-i-accepted) |
-| P1 | Define and document "top review" (Pillar 2) | Highest rating, ties by newest `published_at` then highest id; snippet is the first 140 characters of the stripped body | [Top review snippet](#top-review-snippet) |
-| P2 | How to compile the SCSS (Pillar 4) | `make node ARGS="npm run build:css"` writes `app/static/css/theme.css` | [Compiling the SCSS](#compiling-the-scss) |
-| P3 | Local token verification or a call to the auth service, and why (Pillar 5) | Local: the main app checks the RS256 signature with a public key, so there is no runtime dependency on auth and no per-request hop | [Token verification](#token-verification-and-auth-outage-behaviour) |
-| Q1a | Average rating: store, derive or both? | Derived: an aggregate over reviews rounded to 1 decimal; the WP ACF `average_rating` is not imported, so the API can differ from WP | [Modeling decisions](#modeling-decisions) |
-| Q1b | Reviewer users: Django users, a Reviewer model or denormalized strings? | A `Reviewer` model, because the main app stores no users, passwords or roles | [Modeling decisions](#modeling-decisions) |
-| Q2 | Postmeta: which fields became model fields, JSON or were dropped? | ACF `website_url`, `founded_year`, `headquarters` are columns; `_yoast_wpseo_*` kept as JSON on `Brand.seo`; other WP-internal keys dropped | [Modeling decisions](#modeling-decisions) |
-| Q3a | Migration: why this approach? | A `manage.py` command reading MariaDB directly, upserting on WP ID. Why: the data is already loaded in the `db` service, so querying it avoids parsing the SQL dump | [Migration](#migration-wordpress-to-the-main-app) |
-| Q3b | How do you re-run it safely? | Upsert on WP ID, one transaction, never deletes, second run prints `created=0 updated=0` and a test covers it | [Migration](#migration-wordpress-to-the-main-app) |
-| Q3c | How would it scale to 100x the data? | Not measured. Plan: read in ID-range chunks, bulk upsert each chunk, and commit per batch instead of one transaction | [What I would do differently](#what-i-would-do-differently-with-more-time) |
-| Q4a | Why this pagination shape? | `page`/`page_size` with a `{count, next, previous, results}` envelope: familiar DRF-style conventions, so clients need nothing new to learn | [Running the main app](#running-the-main-app) |
-| Q4b | Why these filter/sort parameter names? | Repeatable `industry` slug (several OR-ed) and one `ordering` param (`name`, `average_rating`, `review_count`, with `-` for descending): the same familiar DRF-style conventions | [Running the main app](#running-the-main-app) |
-| Q4c | What would change if a mobile client also consumed it? | Nothing in the contract: it already suits a mobile client | [Running the main app](#running-the-main-app) |
-| Q5a | Where does `<BrandList />` state live? | In the component (`useState`): industry, ordering, brands, status | [The React component](#the-react-component) |
-| Q5b | How is URL-synced filter/sort state handled? | It is not: no URL sync, accepted as assumption A13 (unvalidated) | [AI defaults I accepted](#ai-defaults-i-accepted) |
-| Q5c | Loading/error UX? | `role="status"` loading and empty messages; `role="alert"` error with a retry; requests are aborted when a newer one starts | [The React component](#the-react-component) |
-| Q6a | SCSS: why these partials and tokens? | One partial per commented section of `reference/theme.css`, grouped as `tokens/`, `base/`, `layout/`, `components/`; tokens are the `:root` custom properties. Why: it matches the previous pattern, and other themes that use the same selectors could be swapped in alongside | [Compiling the SCSS](#compiling-the-scss) |
-| Q6b | How does a second engineer add a component without breaking yours? | Add `components/_name.scss`, add an `@use` line to `main.scss`, use the token custom properties rather than literal colours | [Compiling the SCSS](#compiling-the-scss) |
-| Q7a | What does the auth service own, what does the main app own? | Auth owns users, passwords, roles and token signing; the main app owns brand data and verifies tokens only | [Auth service users](#auth-service-users), [Token verification](#token-verification-and-auth-outage-behaviour) |
-| Q7b | How does the main app validate a token, and what if auth is down? | Locally with the public key (signature, `iss`, `exp`, `role`); public endpoints and unexpired editor tokens keep working, only login fails | [Token verification](#token-verification-and-auth-outage-behaviour) |
-| Q7c | How do you revoke a token or change a role before it expires? | You cannot: 15-minute expiry is the mechanism, role changes apply at the next login, and rotating the signing key invalidates everything | [Token verification](#token-verification-and-auth-outage-behaviour) |
-| Q8a | Shared library: what went in and what stayed out? | In: claims, RS256 verification, role checks, all framework-free. Out: signing (auth service only) and the Ninja auth wrapper (main app) | [Tests and the shared library](#tests-and-the-shared-library) |
-| Q8b | How do the two services pin and upgrade it? | Both images `pip install` it from `lib/ca_auth_lib`; each `requirements.txt` pins `ca-auth-lib==0.1.0` exactly | [Tests and the shared library](#tests-and-the-shared-library) |
-| Q8c | How do you release a breaking change without deploying both at once? | Expand and contract: ship a version supporting old and new, move each service separately, then remove the old behaviour | [Tests and the shared library](#tests-and-the-shared-library) |
+| D1 | Run app, auth, React locally | `make up`, `make jwt-keys`, `make up` | [Quick start](#quick-start) |
+| D4 | Run and re-run the migration | `import_wp`; upsert on WP ID, rerun is a no-op | [Migration](#migration-wordpress-to-the-main-app) |
+| D2 | Get a token, call protected endpoint | Login, then `PATCH` with Bearer token | [Login](#login-auth-service) |
+| D3 | Library tests, how versions reach services | `make lib-test`; bump version and both pins | [Library tests](#tests-and-the-shared-library) |
+
+### Data and migration
+
+| # | Asks | Answer | Where |
+|---|---|---|---|
+| Q1a | Average rating: store or derive? | Derived by aggregate, 1 decimal | [Modeling](written-answers.md#modeling-decisions) |
+| Q1b | Reviewers: users, model or strings? | `Reviewer` model, no users in main app | [Modeling](written-answers.md#modeling-decisions) |
+| Q2 | Postmeta: fields, JSON or dropped? | ACF columns, Yoast JSON, rest dropped | [Modeling](written-answers.md#modeling-decisions) |
+| Q3a | Why this migration approach? | Read MariaDB directly; skips parsing the dump | [Migration](#migration-wordpress-to-the-main-app) |
+| Q3b | Re-run safely? | Upsert on WP ID, one transaction | [Migration](#migration-wordpress-to-the-main-app) |
+| Q3c | Scale to 100x? | Chunked bulk upserts, commit per batch | [Differently](written-answers.md#what-i-would-do-differently-with-more-time) |
+
+### API and component
+
+| # | Asks | Answer | Where |
+|---|---|---|---|
+| P1 | Define "top review" | Highest rating, newest ties; first 24 words | [Top review](#top-review-snippet) |
+| Q4a | Why this pagination shape? | `page`/`page_size` plus count envelope; familiar | [Main app](#running-the-main-app) |
+| Q4b | Why these filter/sort params? | Repeatable `industry`, one `ordering`; familiar | [Main app](#running-the-main-app) |
+| Q4c | What changes for mobile? | Nothing in the contract | [Main app](#running-the-main-app) |
+| Q5a | Where does state live? | In the component, `useState` | [React component](#the-react-component) |
+| Q5b | URL-synced state? | Query string via `replaceState` | [React component](#the-react-component) |
+| Q5c | Loading and error UX? | Status, alert with retry, aborted requests | [React component](#the-react-component) |
+
+### Styling
+
+| # | Asks | Answer | Where |
+|---|---|---|---|
+| P2 | Compile the SCSS | `npm run build:css` in Docker | [SCSS](#compiling-the-scss) |
+| Q6a | Why these partials and tokens? | Mirror `theme.css` sections; themes can swap | [SCSS](#compiling-the-scss) |
+| Q6b | How to add a component? | New partial, one `@use`, use tokens | [SCSS](#compiling-the-scss) |
+
+### Auth and shared library
+
+| # | Asks | Answer | Where |
+|---|---|---|---|
+| P3 | Verify token locally or remotely, why? | Locally; no runtime dependency on auth | [Token verification](#token-verification-and-auth-outage-behaviour) |
+| Q7a | What does each service own? | Auth: users, roles, signing. App: data | [Auth users](#auth-service-users) |
+| Q7b | Validate a token; auth down? | Local public key; only login fails | [Token verification](#token-verification-and-auth-outage-behaviour) |
+| Q7c | Revoke or change role early? | Cannot; 15-minute expiry, next login | [Token verification](#token-verification-and-auth-outage-behaviour) |
+| Q8a | Library: what in, what out? | In: claims, verify, roles. Out: signing | [Library tests](#tests-and-the-shared-library) |
+| Q8b | Pin and upgrade it? | Exact `ca-auth-lib==` pin per service | [Library tests](#tests-and-the-shared-library) |
+| Q8c | Breaking change without joint deploy? | Expand, move each service, contract | [Library tests](#tests-and-the-shared-library) |
+
+### Write-up
+
+| # | Asks | Answer | Where |
+|---|---|---|---|
+| D5a | Modeling decisions | WP-ID keys, derived rating, `Reviewer` model | [Modeling](written-answers.md#modeling-decisions) |
+| D5b | What I would do differently | Re-import edits, deletes, sanitising, login UI | [Differently](written-answers.md#what-i-would-do-differently-with-more-time) |
+| D5c | AI defaults chosen over preference | Table of accepted defaults with reasons | [AI defaults](written-answers.md#ai-defaults-i-accepted) |
 
 ## Migration (WordPress to the main app)
 
@@ -174,54 +201,9 @@ Auth outage (auth container stopped): the main app does not depend on it, so not
 
 Revocation and role changes: there is no revocation list and no refresh token. A token cannot be revoked before it expires; the short 15-minute lifetime is the revocation mechanism, so a removed or demoted user keeps their old access for up to 15 minutes. A role change applies at the user's next login (a new token carries the new `role`); until then the old token keeps its old role. Rotating the signing key (redeploy auth with the new private key and the main app with the new public key) invalidates all outstanding tokens at once.
 
-## Modeling decisions, hindsight and AI defaults
+## Written answers
 
-> **Draft for the candidate to confirm.** Everything below is taken from the recorded decisions (`SPEC.md`), the build log and the code. Statements marked *(inferred)* are not in the record. The "what I would do differently" and "kept over my preference" lists could only be drafted from the record, not from the candidate's own opinions, so edit them before submitting.
-
-This is a dev/demo take-home, not a production deployment.
-
-### Modeling decisions
-
-- **Rows are keyed on the WP ID.** `Industry`, `Reviewer`, `Brand` and `Review` each carry the WP post, term or user ID, and `import_wp` upserts on it. That is what makes the import re-runnable (C2). Slugs are copied unchanged so URLs match the WP permalinks (C3).
-- **Average rating is derived, not stored.** `Brand.average_rating` is an aggregate over reviews, rounded to 1 decimal. WordPress stores `average_rating` as an ACF field. That field is not imported, so the API value can differ from what WP displays.
-- **Reviewers are a `Reviewer` model**, not Django users, because the main app stores no users, passwords or roles (C4). Users live only in the auth service.
-- **Postmeta:** the ACF fields (`website_url`, `founded_year`, `headquarters`) are columns, the `_yoast_wpseo_*` keys are kept as JSON on `Brand.seo` and not rendered, and other WP-internal keys are dropped.
-- **`short_description` is a derived-then-editable field.** All 5 seeded brands have an empty excerpt, so it is the first 200 characters of the stripped content, cut at a word boundary. It is stored so an editor can PATCH it.
-- **Top review** is the highest rating, ties broken by newest, shown as the first 140 characters of the body.
-- **Roles:** `reader` and `editor`. WP administrator and editor become `editor`. Tokens are 15-minute RS256 JWTs verified locally with a public key, with no refresh token and no revocation list.
-
-### What I would do differently with more time
-
-From the record and the code:
-
-- **Make edits survive a re-import.** `import_wp` rewrites `short_description` on every run, so an editor PATCH is lost on the next import. Fixing it needs an "edited by editor" marker or a separate override column. This was found while building R16 and documented, not fixed.
-- **Reconcile the rating with WordPress.** Decide whether the imported WP `average_rating` should be kept for comparison, or the difference documented in the API.
-- **Handle deletes.** The import never deletes, so content removed in WP stays in the app database.
-- **Sanitise HTML.** The templates render WP content with `|safe` (`brand.content`, `review.body`). That is acceptable only because the content is trusted seed data in a dev/demo build (C13). Use an allow-list sanitiser or render only vetted markup before anything real.
-- **Add a login UI, refresh tokens and revocation, and a JWKS endpoint** for key rotation. All are out of scope or deferred in the spec (O5, O6; key rotation is by redeploy).
-- **Look at the scale of the import.** It is a single transaction reading MariaDB directly. *(inferred: at 100x it would need batching; the record asks the question in Q10 but this README does not measure it)*
-- **Cover the framework-default behaviours in tests.** Several assumptions below (A8, A9, A10, A11, A12, A14) are still marked unvalidated in the spec.
-
-### AI defaults I accepted
-
-These are the places where the build agent chose a behaviour the spec did not cover and it was kept. Each is logged in the build inbox. The reason given is the one recorded; where none was recorded it says so. *(The candidate's own preference in each case is not in the record: fill in which of these you would have chosen differently.)*
-
-| Default | Why it was kept |
-|---|---|
-| Industry returned as its name string (`null` if none); snippet strips HTML tags and collapses whitespace before cutting to 140 | Not recorded beyond the assumption (I1) |
-| Listing: `page_size` default 10 and uncapped, default order by name with ties by name then id, nulls last for rating, past-the-end page returns 200 with empty results, several industry slugs OR-ed, unknown slug matches nothing, bad `ordering` or `page` returns Ninja's 422 | Framework defaults accepted as assumptions A8, A10, A11, A14 (I2) |
-| `BrandList` sits on the homepage, industry options come from Django via `json_script` (no industries endpoint), page 1 only with no pagination UI | Keeps the stack small (I3, A13). *(inferred)* |
-| Built bundle `app/static/dist/brandlist.js` is committed | A clean clone then works with no build step (I3) |
-| axe test disables colour contrast in jsdom, contrast is checked in the real browser container instead; Playwright 1.49.1 added as a compose `browser` service | jsdom cannot compute contrast (I4) |
-| Editor satisfies a reader requirement (role hierarchy) | Not recorded beyond the assumption (I8) |
-| `verify_token` also rejects tokens whose `exp - iat` is not 900 and non-integer `iat` or `exp`; signing stays in the auth service, not the library | Not recorded beyond the assumption (I9) |
-| A missing signing key returns 503 on login, not 500 or 401 | Not recorded beyond the assumption (I11). The README Login section documents it |
-| `Brand.short_description` widened from 255 to 500 (migration `0002`) | So the 500-character PATCH limit is storable (I12) |
-| Brand detail page renders `short_description`, which it did not before | Not recorded beyond the assumption (I13) |
-| PATCH strips body whitespace before the 1-500 length check and returns the full brand row | Not recorded beyond the assumption (I14) |
-| PATCH checks the token before the path, so 401 and 403 come before 404, and request-body validation (422) runs before the handler. A PATCH with an unknown slug and an invalid body therefore returns 422, not 404 *(inferred from Ninja's behaviour, not covered by a test)* | Framework default; the tests cover 401/403/404 with a valid body and 422 with a known slug |
-
-Decisions the candidate made explicitly (the Q-items in the spec, plus I5 to I7: the private key in `AUTH_JWT_PRIVATE_KEY`, library built before the login endpoint, the token claim shapes) are not listed above because they were not AI defaults.
+Modeling decisions, what I would do differently with more time, and the AI defaults I accepted are in [written-answers.md](written-answers.md).
 
 ## Stack
 
@@ -330,7 +312,7 @@ ACF fields are exposed natively via `show_in_rest: true` set in `wp-content/mu-p
 
 ### Top review snippet
 
-The "top" review of a brand is the one with the **highest rating**; ties are broken by the **newest** `published_at` (then highest id). `top_review_snippet` is that review's body with HTML tags removed and whitespace collapsed, cut to the **first 140 characters**. A brand with no reviews returns `null` for `top_review_snippet` and `average_rating`, and `0` for `review_count`.
+The "top" review of a brand is the one with the **highest rating**; ties are broken by the **newest** `published_at` (then highest id). `top_review_snippet` is that review's body with HTML tags removed and whitespace collapsed, cut to the **first 24 whole words**, with an ellipsis (`…`) added only when words were dropped. This is the same rule as `wp_trim_words` on the WordPress theme's review excerpts. A brand with no reviews returns `null` for `top_review_snippet` and `average_rating`, and `0` for `review_count`.
 
 ## Notes for the maintainer
 
@@ -338,3 +320,50 @@ The "top" review of a brand is the one with the **highest rating**; ties are bro
 - `wp-content/plugins/akismet/` and `hello.php` are WP defaults — left in place but inactive.
 - The site URL is hardcoded as `http://localhost:8080` in the dump (in `wp_options.siteurl` and `home`). Changing the port requires a search/replace in `db/dump.sql` before commit, or just override via `WP_HOME` / `WP_SITEURL` constants.
 - `_yoast_wpseo_*` postmeta is seeded for brand posts only.
+
+
+# AUTOMATIC WRITTEN ANSWERS
+
+## Modeling decisions
+
+- **Rows are keyed on the WP ID.** `Industry`, `Reviewer`, `Brand` and `Review` each carry the WP post, term or user ID, and `import_wp` upserts on it. That is what makes the import re-runnable (C2). Slugs are copied unchanged so URLs match the WP permalinks (C3).
+- **Average rating is derived, not stored.** `Brand.average_rating` is an aggregate over reviews, rounded to 1 decimal. WordPress stores `average_rating` as an ACF field. That field is not imported, so the API value can differ from what WP displays.
+- **Reviewers are a `Reviewer` model**, not Django users, because the main app stores no users, passwords or roles (C4). Users live only in the auth service.
+- **Postmeta:** the ACF fields (`website_url`, `founded_year`, `headquarters`) are columns, the `_yoast_wpseo_*` keys are kept as JSON on `Brand.seo` and not rendered, and other WP-internal keys are dropped.
+- **`short_description` is a derived-then-editable field.** All 5 seeded brands have an empty excerpt, so it is the first 200 characters of the stripped content, cut at a word boundary. It is stored so an editor can PATCH it.
+- **Top review** is the highest rating, ties broken by newest, shown as the first 24 whole words of the body, with an ellipsis when shortened, like WordPress's `wp_trim_words`.
+- **Roles:** `reader` and `editor`. WP administrator and editor become `editor`. Tokens are 15-minute RS256 JWTs verified locally with a public key, with no refresh token and no revocation list.
+
+## What I would do differently with more time
+
+From the record and the code:
+
+- **Make edits survive a re-import.** `import_wp` rewrites `short_description` on every run, so an editor PATCH is lost on the next import. Fixing it needs an "edited by editor" marker or a separate override column. This was found while building R16 and documented, not fixed.
+- **Reconcile the rating with WordPress.** Decide whether the imported WP `average_rating` should be kept for comparison, or the difference documented in the API.
+- **Handle deletes.** The import never deletes, so content removed in WP stays in the app database.
+- **Sanitise HTML.** The templates render WP content with `|safe` (`brand.content`, `review.body`). That is acceptable only because the content is trusted seed data in a dev/demo build (C13). Use an allow-list sanitiser or render only vetted markup before anything real.
+- **Add a login UI, refresh tokens and revocation, and a JWKS endpoint** for key rotation. All are out of scope or deferred in the spec (O5, O6; key rotation is by redeploy).
+- **Look at the scale of the import.** It is a single transaction reading MariaDB directly. *(inferred: at 100x it would need batching; the record asks the question in Q10 but this README does not measure it)*
+- **Cover the framework-default behaviours in tests.** Several assumptions below (A8, A9, A10, A11, A12, A14) are still marked unvalidated in the spec.
+
+## AI defaults I accepted
+
+These are the places where the build agent chose a behaviour the spec did not cover and it was kept. Each is logged in the build inbox. The reason given is the one recorded; where none was recorded it says so. *(The candidate's own preference in each case is not in the record: fill in which of these you would have chosen differently.)*
+
+| Default | Why it was kept |
+|---|---|
+| Industry returned as its name string (`null` if none); snippet strips HTML tags and collapses whitespace before keeping 24 whole words (WP's `wp_trim_words` rule, chosen by the candidate) | Not recorded beyond the assumption (I1) |
+| Listing: `page_size` default 10 and uncapped, default order by name with ties by name then id, nulls last for rating, past-the-end page returns 200 with empty results, several industry slugs OR-ed, unknown slug matches nothing, bad `ordering` or `page` returns Ninja's 422 | Framework defaults accepted as assumptions A8, A10, A11, A14 (I2) |
+| `BrandList` sits on the homepage, industry options come from Django via `json_script` (no industries endpoint), pagination is Previous/Next with a "Showing X-Y of N" line, page size fixed at 10 | Keeps the stack small (I3). *(inferred)* |
+| URL state uses `history.replaceState`, so changing a filter, sort or page adds no Back-button entry (Back leaves the page); `PAGE_SIZE` 10 is sent explicitly; a shared link past the last page resets to page 1 | `CHALLENGE.md` asks how URL-synced state is handled but says nothing about the Back button, so this is an assumption (I16). *(inferred: `pushState` plus a `popstate` listener would make Back step through filters)* |
+| Built bundle `app/static/dist/brandlist.js` is committed | A clean clone then works with no build step (I3) |
+| axe test disables colour contrast in jsdom, contrast is checked in the real browser container instead; Playwright 1.49.1 added as a compose `browser` service | jsdom cannot compute contrast (I4) |
+| Editor satisfies a reader requirement (role hierarchy) | Not recorded beyond the assumption (I8) |
+| `verify_token` also rejects tokens whose `exp - iat` is not 900 and non-integer `iat` or `exp`; signing stays in the auth service, not the library | Not recorded beyond the assumption (I9) |
+| A missing signing key returns 503 on login, not 500 or 401 | Not recorded beyond the assumption (I11). The README Login section documents it |
+| `Brand.short_description` widened from 255 to 500 (migration `0002`) | So the 500-character PATCH limit is storable (I12) |
+| Brand detail page renders `short_description`, which it did not before | Not recorded beyond the assumption (I13) |
+| PATCH strips body whitespace before the 1-500 length check and returns the full brand row | Not recorded beyond the assumption (I14) |
+| PATCH checks the token before the path, so 401 and 403 come before 404, and request-body validation (422) runs before the handler. A PATCH with an unknown slug and an invalid body therefore returns 422, not 404 *(inferred from Ninja's behaviour, not covered by a test)* | Framework default; the tests cover 401/403/404 with a valid body and 422 with a known slug |
+
+Decisions the candidate made explicitly (the Q-items in the spec, plus I5 to I7: the private key in `AUTH_JWT_PRIVATE_KEY`, library built before the login endpoint, the token claim shapes) are not listed above because they were not AI defaults.

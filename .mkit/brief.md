@@ -18,30 +18,15 @@ Build only what is listed. Out-of-scope items are decisions, not gaps. Anything 
 - C13 Built for dev and demo as a take-home, not for production deployment
 
 ## Build
-- **R13** [P0] Auth service owns users and its own re-runnable import creates them from wp_users
-  - auth service runs as its own container with its own database service
-  - the main app database schema contains no password or role columns
-  - one documented auth service command imports wp_users and their roles from the WP source
-  - a second consecutive run of that command creates no new users and reports created, updated and unchanged counts
-  - after the import the number of auth users equals the number of wp_users
-  - each imported user can log in with the dev password read from an environment variable with a documented local default, never hardcoded in source
-  - auth user IDs are UUIDs derived deterministically from the WP user ID (UUIDv5 with a fixed namespace constant in the importer)
-  - the auth database stores no WP user ID
-  - a rerun derives the same UUIDs and creates no duplicates
-  - the UUIDv5 namespace is one fixed constant in the importer
-  - the auth database is reset and import_wp_users rerun, with no integer-to-UUID data migration
-- **R14** [P0] Login exchanges credentials for a token
-  - a login request with valid credentials returns a token
-  - invalid credentials return 401 with no token
-  - the README shows a curl command that obtains a token
-  - login is POST /api/auth/login with JSON username and password and returns JSON access_token, token_type and expires_in
-  - the token is an RS256 JWT with claims sub, role, iat, exp and iss
-  - the library core defines these claim names and the auth service imports them
-  - the token claim sub is the auth user's UUID string
-  - the signing key is read from AUTH_JWT_PRIVATE_KEY and login returns 503 when it is unset
-  - iss is ca-auth
-  - role is reader or editor
-  - iat and exp are integer epoch seconds with exp = iat + 900
+- **R8** [P0] BrandList consumes the API with industry filter and sort control
+  - <BrandList /> renders on a server-rendered Django page
+  - choosing an industry sends a request with the filter and the cards update
+  - changing the sort control sends a request with the sort and the card order changes
+  - initial render shows the brands returned by GET /api/brands/
+  - the card's industry badge uses the same markup as the WordPress brand archive card (wrapped in its own element) and is sized to its text, not stretched across the card
+  - the industry and sort controls stay native selects, restyled with project tokens (custom arrow, 44px minimum height, visible labels)
+  - the selected industry and ordering are kept in the page URL query string and are restored on reload and when the link is shared
+  - the component lets the user reach every brand beyond the first page (pagination controls) and shows how many brands exist
 
 ## Do NOT build
 - O1 Migrating the WP admin and editor experience
@@ -85,7 +70,6 @@ Build only what is listed. Out-of-scope items are decisions, not gaps. Anything 
 - A9 The serializer defaults for row field types and rounding are acceptable and a published schema is not needed
 - A10 The behaviour of multiple industry slugs and of an unknown slug can stay undefined
 - A11 An uncapped page_size and the framework default beyond the last page are acceptable
-- A12 The brand listing will not issue a query per row
 - A13 Filter and sort state in the component without URL sync is acceptable
 - A14 Framework default error bodies and 401 headers are consistent enough
 - A15 The cut order in T20 is enough without changing priorities, R9 and R11 can stay P0

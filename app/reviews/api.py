@@ -14,7 +14,7 @@ from pydantic import ConfigDict
 
 from .models import Brand, Review
 
-SNIPPET_LENGTH = 140
+SNIPPET_WORDS = 24  # same count as wp_trim_words on the WP theme's review excerpts
 TAG_RE = re.compile(r"<[^>]+>")
 
 DEFAULT_PAGE_SIZE = 10
@@ -72,8 +72,10 @@ def top_review_body_subquery():
 def snippet(body):
     if body is None:
         return None
-    text = " ".join(html.unescape(TAG_RE.sub(" ", body)).split())
-    return text[:SNIPPET_LENGTH]
+    words = html.unescape(TAG_RE.sub(" ", body)).split()
+    if len(words) <= SNIPPET_WORDS:
+        return " ".join(words)
+    return " ".join(words[:SNIPPET_WORDS]) + "\u2026"
 
 
 def brand_queryset():

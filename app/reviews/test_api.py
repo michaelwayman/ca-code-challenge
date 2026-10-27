@@ -126,6 +126,34 @@ class BrandListTests(TestCase):
         for query in ("page=0", "page_size=0", "page=abc"):
             self.assertEqual(self.client.get(f"/api/brands/?{query}").status_code, 422, query)
 
+    def test_snippet_keeps_24_whole_words_and_adds_ellipsis_only_when_cut(self):
+        from .api import snippet
+        short = " ".join(f"w{i}" for i in range(24))
+        self.assertEqual(snippet(f"<p>{short}</p>"), short)
+        longer = short + " extra words"
+        self.assertEqual(snippet(f"<p>{longer}</p>"), short + "\u2026")
+        self.assertEqual(snippet("<p>a  &amp;\n b</p>"), "a & b")
+        self.assertIsNone(snippet(None))
+
+    def test_listing_query_count_does_not_grow_with_brands(self):
+        from django.db import connection
+        from django.test.utils import CaptureQueriesContext
+
+        def queries():
+            with CaptureQueriesContext(connection) as ctx:
+                self.get("?page_size=100")
+            return len(ctx)
+
+        before = queries()
+        now = timezone.now()
+        for i in range(20):
+            brand = Brand.objects.create(
+                wp_post_id=1000 + i, slug=f"extra{i}", name=f"Extra {i}", industry=self.tech,
+                short_description="d", published_at=now)
+            Review.objects.create(wp_post_id=5000 + i, slug=f"extra-r{i}", title="t",
+                                  body="<p>x</p>", rating=3, brand=brand, published_at=now)
+        self.assertEqual(queries(), before)
+
     def test_top_review_snippet_is_highest_rating(self):
         row = next(r for r in self.get()["results"] if r["name"] == "Echo")
         self.assertEqual(row["top_review_snippet"], "body 2")
