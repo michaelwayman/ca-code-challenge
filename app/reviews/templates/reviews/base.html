@@ -1,0 +1,22 @@
+{% load static %}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Brand Reviews{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+</head>
+<body>
+<header class="site-header">
+  <div class="container">
+    <p class="site-title"><a href="{% url 'home' %}">Brand Reviews</a></p>
+  </div>
+</header>
+<main>
+{% block content %}{% endblock %}
+</main>
+<footer class="site-footer">
+  <div class="container">Brand Reviews Challenge</div>
+</footer>
+</body>
+</html>

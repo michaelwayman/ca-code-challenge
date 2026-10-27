@@ -1,0 +1,30 @@
+{% extends "reviews/base.html" %}
+{% load reviews_extras %}
+{% block title %}{{ brand.name }} reviews{% endblock %}
+{% block content %}
+<section class="brand-hero">
+  <div class="container">
+    {% if brand.industry %}<span class="badge">{{ brand.industry.name }}</span>{% endif %}
+    <h1>{{ brand.name }}</h1>
+    {% stars rating %}
+    <div class="brand-meta">
+      {% if brand.headquarters %}<span><strong>HQ:</strong> {{ brand.headquarters }}</span>{% endif %}
+      {% if brand.founded_year %}<span><strong>Founded:</strong> {{ brand.founded_year }}</span>{% endif %}
+      {% if brand.website_url %}<span><a href="{{ brand.website_url }}" rel="nofollow noopener">Website</a></span>{% endif %}
+    </div>
+  </div>
+</section>
+<section class="brand-body">
+  <div class="container"><div class="content">{{ brand.content|safe }}</div></div>
+</section>
+<section class="reviews-section">
+  <div class="container">
+    <h2>Reviews ({{ reviews|length }})</h2>
+    {% for review in reviews %}
+      {% include "reviews/_review_item.html" %}
+    {% empty %}
+      <p>No reviews yet.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

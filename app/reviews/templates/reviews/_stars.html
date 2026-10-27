@@ -1,0 +1,1 @@
+<span class="stars" role="img" aria-label="{{ value|default:'No' }} out of 5 stars">{% for _ in full %}<span class="star-full" aria-hidden="true">★</span>{% endfor %}{% for _ in empty %}<span class="star-empty" aria-hidden="true">★</span>{% endfor %}{% if value %}<span class="rating-value">{{ value }}</span>{% endif %}</span>

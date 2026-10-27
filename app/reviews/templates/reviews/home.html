@@ -1,0 +1,19 @@
+{% extends "reviews/base.html" %}
+{% block content %}
+<section class="hero">
+  <div class="container">
+    <h1>Honest reviews of the brands you rely on</h1>
+    <p>Independent customer reviews of insurers, banks, internet providers, retailers and more.</p>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    <div class="section-header"><h2>Most recent reviews</h2></div>
+    {% for review in reviews %}
+      {% include "reviews/_review_item.html" with show_brand=True %}
+    {% empty %}
+      <p>No reviews yet.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}

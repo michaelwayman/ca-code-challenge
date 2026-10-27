@@ -1,0 +1,13 @@
+{% load reviews_extras %}
+<article class="review-item">
+  <div class="review-head">
+    <h3><a href="{% url 'review-detail' review.slug %}">{{ review.title }}</a></h3>
+    {% stars review.rating %}
+  </div>
+  <p class="review-byline">
+    {% if show_brand %}<a href="{% url 'brand-detail' review.brand.slug %}">{{ review.brand.name }}</a> · {% endif %}
+    {{ review.reviewer.display_name|default:"Anonymous" }}{% if review.reviewer_location %}, {{ review.reviewer_location }}{% endif %}
+    · {{ review.published_at|date:"M j, Y" }}
+  </p>
+  <div class="review-body">{{ review.body|safe }}</div>
+</article>

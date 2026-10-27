@@ -123,6 +123,8 @@ services:
     depends_on:
       app-db:
         condition: service_healthy
+      db:
+        condition: service_healthy
     ports:
       - "${APP_PORT:-8000}:8000"
     environment:
@@ -130,6 +132,11 @@ services:
       POSTGRES_DB: ${APP_DB_NAME:-app}
       POSTGRES_USER: ${APP_DB_USER:-app}
       POSTGRES_PASSWORD: ${APP_DB_PASSWORD:-app}
+      WP_DB_HOST: db
+      WP_DB_NAME: ${WORDPRESS_DB_NAME:-wp}
+      WP_DB_USER: ${WORDPRESS_DB_USER:-wp}
+      WP_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wp}
+      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX:-wp_}
     volumes:
       - ./app:/srv
     healthcheck:
