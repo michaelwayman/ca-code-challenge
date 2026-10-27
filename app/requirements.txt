@@ -2,3 +2,4 @@ Django==5.2.*
 django-ninja==1.*
 psycopg[binary]==3.*
 PyMySQL==1.*
+ca-auth-lib==0.1.0

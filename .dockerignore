@@ -1,0 +1,9 @@
+.git
+.mkit
+db
+wp-content
+reference
+frontend/node_modules
+scripts/browser/node_modules
+**/__pycache__
+**/*.pyc
