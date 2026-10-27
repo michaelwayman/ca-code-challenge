@@ -66,6 +66,11 @@
 - Source: brief §How the evaluation works
 - Real: real
 
+### C13. Built for dev and demo as a take-home, not for production deployment
+- Kind: constraint
+- Source: user, answer to the target environment question
+- Real: real
+
 ## Assumptions
 
 <!-- A: something we believe but have not verified. Fields: Status (unvalidated|validated|invalid), Test (how we'd know we're wrong). -->
@@ -75,12 +80,72 @@
 - Test: fresh docker compose up then SQL counts on wp_posts by post_type, wp_term_taxonomy and wp_users are non-zero and match the REST API totals
 
 ### A2. Every review links to exactly one existing brand
-- Status: unvalidated
+- Status: validated
 - Test: SQL check that each review post has a brand postmeta value pointing to an existing brand post, zero orphans and zero duplicates
 
 ### A3. Each brand has at most one industry term
-- Status: unvalidated
+- Status: validated
 - Test: SQL count of wp_term_relationships per brand, any brand with more than one term proves it wrong and the API industry field must become a list
+
+### A4. WP user roles can be read from wp_usermeta wp_capabilities
+- Status: validated
+- Test: SQL on wp_usermeta for wp_capabilities shows an administrator or editor row for at least one user and a lower role for another
+
+### A5. One import flow can populate both services without a separate auth-side importer being specified
+- Status: unvalidated
+- Test: from a clean compose, run the documented migration then compare auth user count to wp_users and confirm the main app has no user table
+
+### A6. Reviews do not need a link from the main app to an auth account
+- Status: invalid
+- Test: SQL check whether review post_author differs from reviewer_name, if authors are distinct wp_users a wp_user_id link is needed
+
+### A7. Both services can reach the WP database on the compose network
+- Status: unvalidated
+- Test: docker compose exec from the main app and the auth container connecting to the db service
+
+### A8. Framework defaults for ordering are enough, no explicit default order, tie-break or null placement is needed
+- Status: unvalidated
+- Test: request every page with ordering by average rating on the seeded brands and assert the pages together contain each brand exactly once, then repeat with a brand that has no reviews
+
+### A9. The serializer defaults for row field types and rounding are acceptable and a published schema is not needed
+- Status: unvalidated
+- Test: a contract test over GET /api/brands/ asserting each field type, including a brand with no reviews
+
+### A10. The behaviour of multiple industry slugs and of an unknown slug can stay undefined
+- Status: unvalidated
+- Test: request with two valid slugs and with one unknown slug, and check the result is sensible and documented
+
+### A11. An uncapped page_size and the framework default beyond the last page are acceptable
+- Status: unvalidated
+- Test: request page_size=100000 and a page past the end and check the response time and status
+
+### A12. The brand listing will not issue a query per row
+- Status: unvalidated
+- Test: count queries for page_size 5 and 50 and assert they are equal
+
+### A13. Filter and sort state in the component without URL sync is acceptable
+- Status: unvalidated
+- Test: select a filter, reload and copy the link, then check whether the brief's URL-synced state question can be answered without it
+
+### A14. Framework default error bodies and 401 headers are consistent enough
+- Status: unvalidated
+- Test: curl a 401, a 403, a 404 and a 422 from the API and compare body shapes and headers
+
+### A15. The cut order in T20 is enough without changing priorities, R9 and R11 can stay P0
+- Status: unvalidated
+- Test: when behind schedule apply the T20 order and check each pillar's core path still works
+
+### A16. A headless browser container for visual checks fits the Docker-only constraint at demo scale
+- Status: unvalidated
+- Test: add the container and run the 375px and 1280px checks through docker compose, if it takes more than one service and one script fall back to committed screenshots
+
+### A17. An injectable clock in the library core is cheap to add and test
+- Status: unvalidated
+- Test: implement token verification with a clock parameter, if it needs more than a few lines switch to a short token lifetime from an env var
+
+### A18. Logging in every imported user is cheap to test
+- Status: unvalidated
+- Test: loop over all 9 imported users in one test with the dev password and confirm the run stays fast
 
 ## Requirements
 
@@ -103,13 +168,15 @@
   - no table stores generic key and value postmeta rows
   - Yoast keys are kept as one JSON field on brand
   - makemigrations --check reports no pending changes
+  - a reviewer row carries a nullable wp_user_id with no foreign key across databases
+  - after the migration each of the 8 reviewers in the dump has the wp_user_id of its WP author and the review counts per reviewer match the dump
 - Source: brief §Pillar 1
 
-### R3. Re-runnable WP content migration command
+### R3. Re-runnable WP content migration command in the main app
 - Priority: P0
 - Status: active
 - Acceptance:
-  - one documented command imports brands, reviews, industries and users from the WP source
+  - one documented main app command imports brands, reviews, industries and reviewers from the WP source and never creates accounts, passwords or roles
   - Django row counts equal the WP published counts after the first run
   - a second consecutive run creates no new rows and reports created, updated and unchanged counts
   - the command works inside docker compose
@@ -135,6 +202,7 @@
   - GET /api/brands/ with no token returns 200 JSON
   - every row has name, slug, industry, average rating, review count, short description and top review snippet
   - row values equal what the brand detail page shows
+  - if A3 is proven wrong the industry field is returned as a list named industries
 - Source: brief §Pillar 2
 
 ### R6. Brand listing is filterable, sortable and paginated
@@ -182,8 +250,8 @@
   - every control is reachable with Tab and operable with Enter, Space or arrows in a logical order
   - focus is visible on every control
   - the list uses list markup and each control has a programmatic label
-  - an automated accessibility scan (axe) reports zero violations on the page
-  - Visual: focus ring visible on filter, sort and cards at 1280px
+  - an axe check run in the Node container component test reports zero violations
+  - Visual: focus ring visible on filter, sort and cards at 1280px checked from a screenshot taken by a headless browser container
 - Source: brief §Pillar 3
 
 ### R11. BrandList is responsive
@@ -201,19 +269,21 @@
 - Acceptance:
   - SCSS under frontend/scss/ compiles through a documented docker command with no errors
   - every custom property in the :root block of reference/theme.css is defined in a tokens partial
-  - a selector list diff between compiled CSS and reference/theme.css shows no missing selectors
+  - each commented section of reference/theme.css maps to a partial
   - the tree has an entry file and partials split by tokens, base, layout and components
   - the README explains how to compile
 - Source: brief §Pillar 4
 
-### R13. Auth service owns users and the WP users exist there
+### R13. Auth service owns users and its own re-runnable import creates them from wp_users
 - Priority: P0
 - Status: active
 - Acceptance:
   - auth service runs as its own container with its own database service
   - the main app database schema contains no password or role columns
+  - one documented auth service command imports wp_users and their roles from the WP source
+  - a second consecutive run of that command creates no new users and reports created, updated and unchanged counts
   - after the import the number of auth users equals the number of wp_users
-  - each imported user can log in with the documented dev password
+  - each imported user can log in with the dev password read from an environment variable with a documented local default, never hardcoded in source
 - Source: brief §Pillar 5, user choice reset passwords
 
 ### R14. Login exchanges credentials for a token
@@ -223,6 +293,9 @@
   - a login request with valid credentials returns a token
   - invalid credentials return 401 with no token
   - the README shows a curl command that obtains a token
+  - login is POST /api/auth/login with JSON username and password and returns JSON access_token, token_type and expires_in
+  - the token is an RS256 JWT with claims sub, role, iat, exp and iss
+  - the library core defines these claim names and the auth service imports them
 - Source: brief §Pillar 5
 
 ### R15. Auth service is the source of truth for at least two roles
@@ -230,8 +303,9 @@
 - Status: active
 - Acceptance:
   - at least two roles exist and each seeded user has one
-  - a token or verification for a reader shows a reader and for an editor shows an editor
-  - changing a role in the auth service changes what is granted within the documented token lifetime
+  - a freshly issued reader token carries the reader role and an editor token carries the editor role
+  - after a role is changed in the auth service an old token keeps its old role until it expires, shown in a test with an injectable clock
+  - a fresh login after the change carries the new role
 - Source: brief §Pillar 5
 
 ### R16. Editor-only brand write endpoint in the main app
@@ -240,8 +314,12 @@
 - Acceptance:
   - PATCH /api/brands/<slug>/ with no token returns 401
   - with a reader token returns 403
-  - with an editor token returns 200 and the new short description appears in GET /api/brands/ and /brand/<slug>/
+  - with an editor token returns 200 and the response body is the updated brand row
+  - the new short description appears in GET /api/brands/ and /brand/<slug>/
+  - the body accepts only short_description as plain text of 1 to 500 characters
+  - any other field in the body, including slug and name, returns 422 and changes nothing
   - an invalid or expired token returns 401
+  - checks run in the order 401, 403, 404 so an unknown slug does not leak to anonymous callers
   - GET /api/brands/ and the pages still return 200 without a token
 - Source: brief §Pillar 5
 
@@ -263,13 +341,15 @@
   - the main app protected endpoint imports its auth and permission code from the library with no copy in the app
 - Source: brief §Pillar 6
 
-### R19. Library tests run without Django and the library stays small
+### R19. Library has a framework-free core, tests run without Django and the library stays small
 - Priority: P0
 - Status: active
 - Acceptance:
-  - the documented test command passes in an environment where Django is not installed
+  - the documented test command passes in an environment where Django and Ninja are not installed
+  - the core verifies a token, checks a role and defines the shared claim names
+  - the main app imports the core and the auth service imports the claim names from it
+  - the Ninja auth class lives in the main app as a thin adapter over the core
   - the README gives a one-line justification for every module
-  - each module is imported by both services or is test-only
 - Source: brief §Pillar 6
 
 ### R20. Tests cover migration idempotency, API behaviour and auth protection
@@ -407,7 +487,7 @@
 - Decided by: you
 
 ### Q16. Which role names exist, which WP users become editors, and how are tokens revoked or roles changed before expiry?
-- Answer: reader and editor, WP administrator and editor map to editor, 15-minute tokens, role changes apply at next login or refresh
+- Answer: reader and editor, WP administrator and editor map to editor, 15-minute tokens, no refresh token, role changes apply at the next login
 - Decided by: you
 
 ### Q17. How is the shared library installed into both images, how is it pinned, and how is a breaking change released without a simultaneous deploy?
@@ -416,6 +496,18 @@
 
 ### Q18. Which SCSS toolchain, partial layout and token naming, and how does a second engineer add a component?
 - Answer: Dart Sass with flat partials by page section
+- Decided by: you
+
+### Q19. How does the main app obtain the RS256 public key (mounted file or JWKS endpoint) and how are keys rotated?
+- Answer: Public key in an environment variable, rotated by redeploying with the new key
+- Decided by: you
+
+### Q20. What is the call date, and which requirements drop first if time runs short?
+- Answer: Call date unknown, cut order R20 first, then R12 polish, then R11, then R9
+- Decided by: you
+
+### Q21. Where does the code that reads the WP database live: each service owns its own queries and only the upsert-by-WP-ID pattern is shared, or the shared library holds a WP reader?
+- Answer: Each service owns its own WP queries, only the upsert by WP ID pattern is a shared convention and the library gets no WP reader
 - Decided by: you
 
 ## Technology
@@ -438,7 +530,7 @@
 - When down: login fails, public reads keep working, PATCH behaves as decided in Q8
 
 ### T4. Shared Python library
-- Owns: token verification and permission checks used by both services
+- Owns: token verification, permission checks and shared claim names used by both services
 - Calls: none, pure code testable without Django
 - When down: not a runtime service
 
@@ -474,7 +566,7 @@
 
 ### T11. Rating and reviewer modelling
 - Choice: average derived by aggregate, separate Reviewer model
-- Why: never stale, main app owns no accounts
+- Why: user choice, never stale and the main app owns no accounts. Dump check: stored average_rating differs from the mean of the reviews for 4 of 5 brands (brand 11 stores 4.4 but its reviews average 3.67) and the sort order differs, so sorting must use the derived value
 - Alternative: stored average, denormalised strings
 
 ### T12. Postmeta mapping
@@ -493,8 +585,8 @@
 - Alternative: limit and offset, cursor
 
 ### T15. Roles and revocation
-- Choice: reader and editor, WP administrator and editor become editor, 15-minute tokens
-- Why: local verification with a documented revocation trade-off
+- Choice: reader and editor, WP administrator and editor become editor, 15-minute tokens, no refresh token and no refresh endpoint, role changes apply at the next login
+- Why: local verification with a documented revocation trade-off and no extra endpoint to build
 - Alternative: main app denylist, three roles
 
 ### T16. Library distribution
@@ -511,6 +603,27 @@
 - Choice: first 200 characters of HTML-stripped content cut at a word boundary, stored as an editable brand field
 - Why: all 5 brands have an empty WP excerpt and no short_description meta
 - Alternative: first paragraph of content
+
+### T19. Public key distribution
+- Choice: RS256 public key supplied to the main app as an environment variable, rotated by redeploy
+- Why: no runtime dependency on the auth service
+- Alternative: mounted PEM file, JWKS endpoint
+
+### T20. Cut order
+- Choice: R20, then R12 polish, then R11, then R9, core path of every pillar stays
+- Why: call date is unknown
+- Alternative: drop R20 then R10
+
+### T21. WP reader location
+- Choice: a module in the shared library with an injected connection, each service does its own upserts
+- Why: user choice, one place for WP schema knowledge
+- Alternative: each service owns its queries, separate migration tool
+- Status: removed (2026-10-27, Q21 shared WP reader choice undone at user request, being re-asked)
+
+### T22. WP reader location
+- Choice: each service owns its own WP queries, main app reads posts, meta and terms, auth service reads wp_users and capabilities
+- Why: keeps the library small, Django-free and free of a database driver
+- Alternative: WP reader module in the shared library, separate migration tool
 
 ## Deliverables trace
 
@@ -727,3 +840,53 @@
 | 2026-10-27 | ALTER Q11 | mkit |
 | 2026-10-27 | ANSWER Q11 | mkit |
 | 2026-10-27 | ADD T18: Short description source | mkit |
+| 2026-10-27 | ALTER R19 | mkit |
+| 2026-10-27 | ALTER R15 | mkit |
+| 2026-10-27 | ALTER R5 | mkit |
+| 2026-10-27 | ALTER R10 | mkit |
+| 2026-10-27 | ALTER R13 | mkit |
+| 2026-10-27 | ADD Q19: How does the main app obtain the RS256 public key (mounted file or JWKS endpoint) and how are keys rotated? | mkit |
+| 2026-10-27 | ADD Q20: What is the call date, and which requirements drop first if time runs short? | mkit |
+| 2026-10-27 | ADD A4: WP user roles can be read from wp_usermeta wp_capabilities | mkit |
+| 2026-10-27 | ANSWER Q19 | mkit |
+| 2026-10-27 | ANSWER Q20 | mkit |
+| 2026-10-27 | ADD T19: Public key distribution | mkit |
+| 2026-10-27 | ADD T20: Cut order | mkit |
+| 2026-10-27 | ADD Q21: Where does the code that reads the WP database live: each service owns its own queries and only the upsert-by-WP-ID pattern is shared, or the shared library holds a WP reader? | mkit |
+| 2026-10-27 | ADD A5: One import flow can populate both services without a separate auth-side importer being specified | mkit |
+| 2026-10-27 | ADD A6: Reviews do not need a link from the main app to an auth account | mkit |
+| 2026-10-27 | ADD A7: Both services can reach the WP database on the compose network | mkit |
+| 2026-10-27 | ANSWER Q21 | mkit |
+| 2026-10-27 | ALTER R19 | mkit |
+| 2026-10-27 | ALTER T4 | mkit |
+| 2026-10-27 | ADD T21: WP reader location | mkit |
+| 2026-10-27 | ALTER R19 | mkit |
+| 2026-10-27 | ALTER T4 | mkit |
+| 2026-10-27 | REMOVE T21: Q21 shared WP reader choice undone at user request, being re-asked | mkit |
+| 2026-10-27 | ANSWER Q21 | mkit |
+| 2026-10-27 | ADD T22: WP reader location | mkit |
+| 2026-10-27 | ALTER R16 | mkit |
+| 2026-10-27 | ADD A8: Framework defaults for ordering are enough, no explicit default order, tie-break or null placement is needed | mkit |
+| 2026-10-27 | ADD A9: The serializer defaults for row field types and rounding are acceptable and a published schema is not needed | mkit |
+| 2026-10-27 | ADD A10: The behaviour of multiple industry slugs and of an unknown slug can stay undefined | mkit |
+| 2026-10-27 | ADD A11: An uncapped page_size and the framework default beyond the last page are acceptable | mkit |
+| 2026-10-27 | ADD A12: The brand listing will not issue a query per row | mkit |
+| 2026-10-27 | ADD A13: Filter and sort state in the component without URL sync is acceptable | mkit |
+| 2026-10-27 | ADD A14: Framework default error bodies and 401 headers are consistent enough | mkit |
+| 2026-10-27 | ADD C13: Built for dev and demo as a take-home, not for production deployment | mkit |
+| 2026-10-27 | ALTER A2 | mkit |
+| 2026-10-27 | ALTER A3 | mkit |
+| 2026-10-27 | ALTER A4 | mkit |
+| 2026-10-27 | ALTER A6 | mkit |
+| 2026-10-27 | ALTER R2 | mkit |
+| 2026-10-27 | ALTER T11 | mkit |
+| 2026-10-27 | ALTER R3 | mkit |
+| 2026-10-27 | ALTER R13 | mkit |
+| 2026-10-27 | ALTER T15 | mkit |
+| 2026-10-27 | ALTER R14 | mkit |
+| 2026-10-27 | ALTER R12 | mkit |
+| 2026-10-27 | ADD A15: The cut order in T20 is enough without changing priorities, R9 and R11 can stay P0 | mkit |
+| 2026-10-27 | ADD A16: A headless browser container for visual checks fits the Docker-only constraint at demo scale | mkit |
+| 2026-10-27 | ADD A17: An injectable clock in the library core is cheap to add and test | mkit |
+| 2026-10-27 | ADD A18: Logging in every imported user is cheap to test | mkit |
+| 2026-10-27 | ANSWER Q16 | mkit |

@@ -10,12 +10,28 @@ C9 [constraint] All six pillars are required, prioritise within them rather than
 C10 [constraint] Call date is the cutoff, no fixed deadline, the date itself is not yet known
 C11 [constraint] reference/theme.css is not edited, SCSS must compile to structurally equivalent CSS
 C12 [constraint] Every submitted piece must be explainable and defensible by the candidate
+C13 [constraint] Built for dev and demo as a take-home, not for production deployment
 A1 [unvalidated] db/dump.sql loads cleanly through docker compose and exposes brands, reviews, industries and users
-A2 [unvalidated] Every review links to exactly one existing brand
-A3 [unvalidated] Each brand has at most one industry term
+A2 [validated] Every review links to exactly one existing brand
+A3 [validated] Each brand has at most one industry term
+A4 [validated] WP user roles can be read from wp_usermeta wp_capabilities
+A5 [unvalidated] One import flow can populate both services without a separate auth-side importer being specified
+A6 [invalid] Reviews do not need a link from the main app to an auth account
+A7 [unvalidated] Both services can reach the WP database on the compose network
+A8 [unvalidated] Framework defaults for ordering are enough, no explicit default order, tie-break or null placement is needed
+A9 [unvalidated] The serializer defaults for row field types and rounding are acceptable and a published schema is not needed
+A10 [unvalidated] The behaviour of multiple industry slugs and of an unknown slug can stay undefined
+A11 [unvalidated] An uncapped page_size and the framework default beyond the last page are acceptable
+A12 [unvalidated] The brand listing will not issue a query per row
+A13 [unvalidated] Filter and sort state in the component without URL sync is acceptable
+A14 [unvalidated] Framework default error bodies and 401 headers are consistent enough
+A15 [unvalidated] The cut order in T20 is enough without changing priorities, R9 and R11 can stay P0
+A16 [unvalidated] A headless browser container for visual checks fits the Docker-only constraint at demo scale
+A17 [unvalidated] An injectable clock in the library core is cheap to add and test
+A18 [unvalidated] Logging in every imported user is cheap to test
 R1 [P0] Whole stack boots from a clean clone
 R2 [P0] Clean relational domain model for brands, reviews, industries and reviewer users
-R3 [P0] Re-runnable WP content migration command
+R3 [P0] Re-runnable WP content migration command in the main app
 R4 [P0] Server-rendered homepage, brand detail and review detail pages
 R5 [P0] Brand listing endpoint returns card-ready rows
 R6 [P0] Brand listing is filterable, sortable and paginated
@@ -25,13 +41,13 @@ R9 [P0] BrandList handles loading, empty and error states
 R10 [P0] BrandList is keyboard accessible and semantic
 R11 [P0] BrandList is responsive
 R12 [P0] SCSS source tree compiles to equivalent CSS
-R13 [P0] Auth service owns users and the WP users exist there
+R13 [P0] Auth service owns users and its own re-runnable import creates them from wp_users
 R14 [P0] Login exchanges credentials for a token
 R15 [P0] Auth service is the source of truth for at least two roles
 R16 [P0] Editor-only brand write endpoint in the main app
 R17 [P0] Token verification approach and auth outage behaviour are decided and documented
 R18 [P0] Shared library is an installable package used by both services
-R19 [P0] Library tests run without Django and the library stays small
+R19 [P0] Library has a framework-free core, tests run without Django and the library stays small
 R20 [P1] Tests cover migration idempotency, API behaviour and auth protection
 R21 [P0] README documents how to run, authenticate, test the library and migrate
 R22 [P0] README records modeling decisions, what to do differently and AI defaults accepted
@@ -62,6 +78,9 @@ Q15 [answered] Which pagination shape and which filter and sort parameter names,
 Q16 [answered] Which role names exist, which WP users become editors, and how are tokens revoked or roles changed before expiry?
 Q17 [answered] How is the shared library installed into both images, how is it pinned, and how is a breaking change released without a simultaneous deploy?
 Q18 [answered] Which SCSS toolchain, partial layout and token naming, and how does a second engineer add a component?
+Q19 [answered] How does the main app obtain the RS256 public key (mounted file or JWKS endpoint) and how are keys rotated?
+Q20 [answered] What is the call date, and which requirements drop first if time runs short?
+Q21 [answered] Where does the code that reads the WP database live: each service owns its own queries and only the upsert-by-WP-ID pattern is shared, or the shared library holds a WP reader?
 T1 [active] WordPress source
 T2 [active] Main Django app
 T3 [active] Auth service
@@ -80,3 +99,7 @@ T15 [active] Roles and revocation
 T16 [active] Library distribution
 T17 [active] SCSS toolchain
 T18 [active] Short description source
+T19 [active] Public key distribution
+T20 [active] Cut order
+T21 [removed] WP reader location
+T22 [active] WP reader location

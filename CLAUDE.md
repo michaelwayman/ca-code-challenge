@@ -13,3 +13,7 @@ When to use what:
 
 Change SPEC.md only through `mkit apply` or `/mkit:change`, never by hand.
 <!-- mkit -->
+
+## Learned rules
+
+- Ask whether the target is dev/demo or production before framing, designing or choosing technology, and record the answer as a constraint. Why: it changes secrets handling, DEBUG, scaling and hosting, and the frame interview skipped it (2026-10-27).
