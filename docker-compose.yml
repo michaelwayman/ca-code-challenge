@@ -152,6 +152,8 @@ services:
     depends_on:
       auth-db:
         condition: service_healthy
+      db:
+        condition: service_healthy
     ports:
       - "${AUTH_PORT:-8001}:8000"
     environment:
@@ -159,6 +161,12 @@ services:
       POSTGRES_DB: ${AUTH_DB_NAME:-auth}
       POSTGRES_USER: ${AUTH_DB_USER:-auth}
       POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:-auth}
+      AUTH_DEV_PASSWORD: ${AUTH_DEV_PASSWORD:-dev-password}
+      WP_DB_HOST: db
+      WP_DB_NAME: ${WORDPRESS_DB_NAME:-wp}
+      WP_DB_USER: ${WORDPRESS_DB_USER:-wp}
+      WP_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wp}
+      WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX:-wp_}
     volumes:
       - ./auth:/srv
     healthcheck:

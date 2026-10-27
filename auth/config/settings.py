@@ -10,6 +10,8 @@ ALLOWED_HOSTS = ["*"]
 
 INSTALLED_APPS = [
     "django.contrib.contenttypes",
+    "django.contrib.auth",
+    "accounts",
     "django.contrib.staticfiles",
 ]
 MIDDLEWARE = ["django.middleware.common.CommonMiddleware"]
@@ -25,6 +27,9 @@ DATABASES = {
         "PASSWORD": os.environ["POSTGRES_PASSWORD"],
     }
 }
+AUTH_USER_MODEL = "accounts.User"
+# Password every imported user gets (dev/demo only, C13). Override via env.
+AUTH_DEV_PASSWORD = os.environ.get("AUTH_DEV_PASSWORD", "dev-password")
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 USE_TZ = True
 STATIC_URL = "static/"

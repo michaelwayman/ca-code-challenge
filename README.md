@@ -35,6 +35,17 @@ This writes `app/static/css/theme.css`, which `base.html` links. Do not edit tha
 
 The DB is auto-imported from `db/dump.sql` on first boot. No manual setup required for candidates.
 
+
+## Auth service users
+
+The auth service owns users, passwords and roles (the main app stores none). Import them from WordPress (re-runnable, keyed on WP user ID):
+
+```
+docker compose run --rm auth python manage.py import_wp_users
+```
+
+It prints `User created=N updated=N unchanged=N`; a second run creates nothing. WP password hashes are never read: every user gets the dev password from `AUTH_DEV_PASSWORD` (default `dev-password`, set in `.env` to override). WP administrator and editor become `editor`, all others `reader`.
+
 ## Stack
 
 | Service     | Image                            | Port  | Purpose                                |
