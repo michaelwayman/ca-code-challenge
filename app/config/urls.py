@@ -6,4 +6,6 @@ def health(request):
     return JsonResponse({"status": "ok", "service": "main-app"})
 
 
-urlpatterns = [path("health/", health), path("", include("reviews.urls"))]
+from reviews.api import api  # noqa: E402
+
+urlpatterns = [path("health/", health), path("api/", api.urls),path("", include("reviews.urls"))]
