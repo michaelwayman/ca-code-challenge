@@ -367,30 +367,56 @@
 - Decided by: you
 
 ### Q6. Which Python and Django versions and which API stack (DRF, Django Ninja or plain views)?
+- Answer: Python 3.12, Django 5.2 LTS, Django Ninja
+- Decided by: you
 
 ### Q7. Which database engine for the main app and for the auth service?
+- Answer: PostgreSQL for both, separate containers
+- Decided by: you
 
 ### Q8. Which token format and signing, and does the main app verify locally or call the auth service, and what happens when it is down?
+- Answer: RS256 JWT, main app verifies locally with the public key, revocation through short expiry
+- Decided by: you
 
 ### Q9. Which React build tooling, language (TypeScript or JavaScript), CSS approach and way of serving the bundle, and where does filter and sort state live including URL sync?
+- Answer: Vite with JavaScript, styled with the project SCSS, filter and sort state in the component
+- Decided by: you
 
 ### Q10. Which migration source (dump.sql, WP REST, MariaDB direct), which idempotency key, and how would it scale to 100x?
+- Answer: manage.py command reading MariaDB directly, upsert keyed on WP post ID
+- Decided by: you
 
-### Q11. Which source becomes a brand's short description (excerpt, content or a new field)?
+### Q11. Which source becomes a brand's short description? Research: all 5 brands in db/dump.sql have an empty excerpt and no short_description postmeta, content is three HTML paragraphs. Candidates: first paragraph of content, or first N characters of stripped content. To confirm with user.
+- Answer: First N characters of the stripped content, N set to 200 and cut at a word boundary, stored as an editable field on brand
+- Decided by: you
 
 ### Q12. Is the average rating stored, derived or both, and are reviewers Django users, a Reviewer model or denormalized strings?
+- Answer: Average derived by aggregate, separate Reviewer model
+- Decided by: you
 
 ### Q13. Which postmeta fields become model fields, JSON or are dropped?
+- Answer: ACF fields as columns, Yoast as JSON, WP-internal keys dropped
+- Decided by: you
 
 ### Q14. What does top review mean (highest rating, most recent, longest, other)?
+- Answer: Highest rating, ties broken by newest, snippet is the first 140 characters of the body
+- Decided by: you
 
 ### Q15. Which pagination shape and which filter and sort parameter names, and is the industry filter single or multi select?
+- Answer: page and page_size, envelope count next previous results, repeatable industry slug filter, ordering param
+- Decided by: you
 
 ### Q16. Which role names exist, which WP users become editors, and how are tokens revoked or roles changed before expiry?
+- Answer: reader and editor, WP administrator and editor map to editor, 15-minute tokens, role changes apply at next login or refresh
+- Decided by: you
 
 ### Q17. How is the shared library installed into both images, how is it pinned, and how is a breaking change released without a simultaneous deploy?
+- Answer: Path install from repo root, exact version pin per service, expand and contract releases
+- Decided by: you
 
 ### Q18. Which SCSS toolchain, partial layout and token naming, and how does a second engineer add a component?
+- Answer: Dart Sass with flat partials by page section
+- Decided by: you
 
 ## Technology
 
@@ -420,6 +446,71 @@
 - Owns: filter and sort UI state
 - Calls: GET /api/brands/
 - When down: shows its error state with retry
+
+### T6. Backend framework
+- Choice: Python 3.12, Django 5.2 LTS, Django Ninja
+- Why: user choice, typed schemas for the brand API
+- Alternative: DRF, plain JSON views
+
+### T7. Databases
+- Choice: PostgreSQL for the main app and for the auth service in separate containers
+- Why: JSON field for Yoast data and unambiguous own database for auth
+- Alternative: MariaDB, SQLite for auth
+
+### T8. Token and verification
+- Choice: RS256 JWT, main app verifies locally with the public key, short expiry for revocation
+- Why: PATCH keeps working when auth is down and the main app cannot forge tokens
+- Alternative: opaque token with introspection, HS256 JWT
+
+### T9. Frontend stack
+- Choice: Vite, JavaScript, project SCSS, state in the component
+- Why: user choice, reuses the SCSS pillar tokens
+- Alternative: TypeScript, CSS modules
+
+### T10. Migration
+- Choice: manage.py command reading MariaDB directly, upsert on WP post ID
+- Why: no dependency on WP running, batched upserts scale to 100x
+- Alternative: WP REST API, parse dump.sql
+
+### T11. Rating and reviewer modelling
+- Choice: average derived by aggregate, separate Reviewer model
+- Why: never stale, main app owns no accounts
+- Alternative: stored average, denormalised strings
+
+### T12. Postmeta mapping
+- Choice: ACF fields as columns, Yoast keys as one JSON field, WP-internal keys dropped
+- Why: keeps the schema clean without losing SEO data
+- Alternative: all non-ACF meta as JSON
+
+### T13. Top review definition
+- Choice: highest rating, ties broken by newest, snippet is the first 140 characters
+- Why: deterministic and easy to test
+- Alternative: most recent, lowest rating
+
+### T14. API contract
+- Choice: page and page_size, envelope count next previous results, repeatable industry slug, ordering param
+- Why: mobile clients follow next links
+- Alternative: limit and offset, cursor
+
+### T15. Roles and revocation
+- Choice: reader and editor, WP administrator and editor become editor, 15-minute tokens
+- Why: local verification with a documented revocation trade-off
+- Alternative: main app denylist, three roles
+
+### T16. Library distribution
+- Choice: path install from repo root, exact version pin per service, expand and contract releases
+- Why: runs offline in Docker and allows staged upgrades
+- Alternative: git URL tags, private index
+
+### T17. SCSS toolchain
+- Choice: Dart Sass with flat partials by page section
+- Why: user choice, mirrors the sections of theme.css
+- Alternative: 7-1 layered partials, custom properties only
+
+### T18. Short description source
+- Choice: first 200 characters of HTML-stripped content cut at a word boundary, stored as an editable brand field
+- Why: all 5 brands have an empty WP excerpt and no short_description meta
+- Alternative: first paragraph of content
 
 ## Deliverables trace
 
@@ -609,3 +700,30 @@
 | 2026-10-27 | TRACE Q18, R12 | mkit |
 | 2026-10-27 | TRACE Q8, Q16, R17 | mkit |
 | 2026-10-27 | TRACE Q17, R19 | mkit |
+| 2026-10-27 | ANSWER Q6 | mkit |
+| 2026-10-27 | ANSWER Q7 | mkit |
+| 2026-10-27 | ANSWER Q8 | mkit |
+| 2026-10-27 | ANSWER Q9 | mkit |
+| 2026-10-27 | ANSWER Q10 | mkit |
+| 2026-10-27 | ANSWER Q12 | mkit |
+| 2026-10-27 | ANSWER Q13 | mkit |
+| 2026-10-27 | ADD T6: Backend framework | mkit |
+| 2026-10-27 | ADD T7: Databases | mkit |
+| 2026-10-27 | ADD T8: Token and verification | mkit |
+| 2026-10-27 | ADD T9: Frontend stack | mkit |
+| 2026-10-27 | ADD T10: Migration | mkit |
+| 2026-10-27 | ADD T11: Rating and reviewer modelling | mkit |
+| 2026-10-27 | ADD T12: Postmeta mapping | mkit |
+| 2026-10-27 | ANSWER Q14 | mkit |
+| 2026-10-27 | ANSWER Q15 | mkit |
+| 2026-10-27 | ANSWER Q16 | mkit |
+| 2026-10-27 | ANSWER Q17 | mkit |
+| 2026-10-27 | ANSWER Q18 | mkit |
+| 2026-10-27 | ADD T13: Top review definition | mkit |
+| 2026-10-27 | ADD T14: API contract | mkit |
+| 2026-10-27 | ADD T15: Roles and revocation | mkit |
+| 2026-10-27 | ADD T16: Library distribution | mkit |
+| 2026-10-27 | ADD T17: SCSS toolchain | mkit |
+| 2026-10-27 | ALTER Q11 | mkit |
+| 2026-10-27 | ANSWER Q11 | mkit |
+| 2026-10-27 | ADD T18: Short description source | mkit |

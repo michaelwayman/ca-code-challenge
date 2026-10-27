@@ -49,21 +49,34 @@ Q2 [answered] Is Yoast SEO data carried across?
 Q3 [answered] Which tests are in scope beyond the library tests?
 Q4 [answered] Are archive and taxonomy pages built?
 Q5 [answered] What happens to wp_users passwords in the auth service?
-Q6 [open] Which Python and Django versions and which API stack (DRF, Django Ninja or plain views)?
-Q7 [open] Which database engine for the main app and for the auth service?
-Q8 [open] Which token format and signing, and does the main app verify locally or call the auth service, and what happens when it is down?
-Q9 [open] Which React build tooling, language (TypeScript or JavaScript), CSS approach and way of serving the bundle, and where does filter and sort state live including URL sync?
-Q10 [open] Which migration source (dump.sql, WP REST, MariaDB direct), which idempotency key, and how would it scale to 100x?
-Q11 [open] Which source becomes a brand's short description (excerpt, content or a new field)?
-Q12 [open] Is the average rating stored, derived or both, and are reviewers Django users, a Reviewer model or denormalized strings?
-Q13 [open] Which postmeta fields become model fields, JSON or are dropped?
-Q14 [open] What does top review mean (highest rating, most recent, longest, other)?
-Q15 [open] Which pagination shape and which filter and sort parameter names, and is the industry filter single or multi select?
-Q16 [open] Which role names exist, which WP users become editors, and how are tokens revoked or roles changed before expiry?
-Q17 [open] How is the shared library installed into both images, how is it pinned, and how is a breaking change released without a simultaneous deploy?
-Q18 [open] Which SCSS toolchain, partial layout and token naming, and how does a second engineer add a component?
+Q6 [answered] Which Python and Django versions and which API stack (DRF, Django Ninja or plain views)?
+Q7 [answered] Which database engine for the main app and for the auth service?
+Q8 [answered] Which token format and signing, and does the main app verify locally or call the auth service, and what happens when it is down?
+Q9 [answered] Which React build tooling, language (TypeScript or JavaScript), CSS approach and way of serving the bundle, and where does filter and sort state live including URL sync?
+Q10 [answered] Which migration source (dump.sql, WP REST, MariaDB direct), which idempotency key, and how would it scale to 100x?
+Q11 [answered] Which source becomes a brand's short description? Research: all 5 brands in db/dump.sql have an empty excerpt and no short_description postmeta, content is three HTML paragraphs. Candidates: first paragraph of content, or first N characters of stripped content. To confirm with user.
+Q12 [answered] Is the average rating stored, derived or both, and are reviewers Django users, a Reviewer model or denormalized strings?
+Q13 [answered] Which postmeta fields become model fields, JSON or are dropped?
+Q14 [answered] What does top review mean (highest rating, most recent, longest, other)?
+Q15 [answered] Which pagination shape and which filter and sort parameter names, and is the industry filter single or multi select?
+Q16 [answered] Which role names exist, which WP users become editors, and how are tokens revoked or roles changed before expiry?
+Q17 [answered] How is the shared library installed into both images, how is it pinned, and how is a breaking change released without a simultaneous deploy?
+Q18 [answered] Which SCSS toolchain, partial layout and token naming, and how does a second engineer add a component?
 T1 [active] WordPress source
 T2 [active] Main Django app
 T3 [active] Auth service
 T4 [active] Shared Python library
 T5 [active] BrandList component in the browser
+T6 [active] Backend framework
+T7 [active] Databases
+T8 [active] Token and verification
+T9 [active] Frontend stack
+T10 [active] Migration
+T11 [active] Rating and reviewer modelling
+T12 [active] Postmeta mapping
+T13 [active] Top review definition
+T14 [active] API contract
+T15 [active] Roles and revocation
+T16 [active] Library distribution
+T17 [active] SCSS toolchain
+T18 [active] Short description source
