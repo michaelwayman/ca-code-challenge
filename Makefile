@@ -2,7 +2,7 @@ SHELL := /bin/bash
 COMPOSE := docker compose
 WPCLI := $(COMPOSE) run --rm wpcli
 
-.PHONY: browser-check node help up down restart logs reset wp bootstrap dump status
+.PHONY: lib-test browser-check node help up down restart logs reset wp bootstrap dump status
 
 help:
 	@echo "Targets:"
@@ -50,3 +50,7 @@ node:
 browser-check:
 	@mkdir -p scripts/browser-out
 	$(COMPOSE) run --rm browser
+
+# Shared library tests: plain python container, no Django or Ninja
+lib-test:
+	$(COMPOSE) run --rm lib-test
