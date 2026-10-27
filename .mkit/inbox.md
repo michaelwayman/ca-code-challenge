@@ -15,4 +15,4 @@
 - [x] I13 2026-10-27 adjust: assumed R16: brand detail page did not render short_description; added it as a paragraph under the hero heading -> R4
 - [x] I14 2026-10-27 adjust: assumed R16: body whitespace is stripped before the 1-500 length check; PATCH returns the full BrandRow shape -> R16
 - [x] I15 2026-10-27 adjust: assumed R22: README section is a DRAFT; own-preference column and 'do differently' list drafted from the record, candidate must confirm; 422-before-404 for PATCH with unknown slug and invalid body is inferred from Ninja behaviour, untested -> R22
-- [ ] I16 2026-10-27 adjust: assumed R8: URL state uses history.replaceState (no Back-button entries), params industry, ordering, page named as in the API; PAGE_SIZE 10 sent explicitly; a past-end shared link resets to page 1; unknown URL values fall back to defaults
+- [x] I16 2026-10-27 adjust: assumed R8: URL state uses history.replaceState (no Back-button entries), params industry, ordering, page named as in the API; PAGE_SIZE 10 sent explicitly; a past-end shared link resets to page 1; unknown URL values fall back to defaults -> R8

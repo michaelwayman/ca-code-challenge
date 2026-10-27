@@ -74,59 +74,59 @@ This writes `app/static/css/theme.css`, which `base.html` links. Do not edit tha
 |---|---|---|---|
 | D1 | Run app, auth, React locally | `make up`, `make jwt-keys`, `make up` | [Quick start](#quick-start) |
 | D4 | Run and re-run the migration | `import_wp`; upsert on WP ID, rerun is a no-op | [Migration](#migration-wordpress-to-the-main-app) |
-| D2 | Get a token, call protected endpoint | Login, then `PATCH` with Bearer token | [Login](#login-auth-service) |
-| D3 | Library tests, how versions reach services | `make lib-test`; bump version and both pins | [Library tests](#tests-and-the-shared-library) |
+| D2 | Get token, call protected endpoint | Login, then `PATCH` with Bearer token | [Login](#login-auth-service) |
+| D3 | Library tests, version rollout | `make lib-test`; bump version and pins | [Library](#tests-and-the-shared-library) |
 
 ### Data and migration
 
 | # | Asks | Answer | Where |
 |---|---|---|---|
-| Q1a | Average rating: store or derive? | Derived by aggregate, 1 decimal | [Modeling](written-answers.md#modeling-decisions) |
-| Q1b | Reviewers: users, model or strings? | `Reviewer` model, no users in main app | [Modeling](written-answers.md#modeling-decisions) |
-| Q2 | Postmeta: fields, JSON or dropped? | ACF columns, Yoast JSON, rest dropped | [Modeling](written-answers.md#modeling-decisions) |
-| Q3a | Why this migration approach? | Read MariaDB directly; skips parsing the dump | [Migration](#migration-wordpress-to-the-main-app) |
+| Q1a | Average rating: store or derive? | Derived by aggregate, 1 decimal | [Modeling](#modeling-decisions) |
+| Q1b | Reviewers: users, model or strings? | `Reviewer` model, no main-app users | [Modeling](#modeling-decisions) |
+| Q2 | Postmeta: fields, JSON or dropped? | ACF columns, Yoast JSON, rest dropped | [Modeling](#modeling-decisions) |
+| Q3a | Why this migration approach? | Read MariaDB directly, no dump parsing | [Migration](#migration-wordpress-to-the-main-app) |
 | Q3b | Re-run safely? | Upsert on WP ID, one transaction | [Migration](#migration-wordpress-to-the-main-app) |
-| Q3c | Scale to 100x? | Chunked bulk upserts, commit per batch | [Differently](written-answers.md#what-i-would-do-differently-with-more-time) |
+| Q3c | Scale to 100x? | Chunked bulk upserts, commit per batch | [Differently](#what-i-would-do-differently-with-more-time) |
 
 ### API and component
 
 | # | Asks | Answer | Where |
 |---|---|---|---|
 | P1 | Define "top review" | Highest rating, newest ties; first 24 words | [Top review](#top-review-snippet) |
-| Q4a | Why this pagination shape? | `page`/`page_size` plus count envelope; familiar | [Main app](#running-the-main-app) |
-| Q4b | Why these filter/sort params? | Repeatable `industry`, one `ordering`; familiar | [Main app](#running-the-main-app) |
+| Q4a | Why this pagination shape? | `page`/`page_size`, count envelope | [Main app](#running-the-main-app) |
+| Q4b | Why these filter/sort params? | Repeatable `industry`, one `ordering` | [Main app](#running-the-main-app) |
 | Q4c | What changes for mobile? | Nothing in the contract | [Main app](#running-the-main-app) |
-| Q5a | Where does state live? | In the component, `useState` | [React component](#the-react-component) |
-| Q5b | URL-synced state? | Query string via `replaceState` | [React component](#the-react-component) |
-| Q5c | Loading and error UX? | Status, alert with retry, aborted requests | [React component](#the-react-component) |
+| Q5a | Where does state live? | In the component, `useState` | [Component](#the-react-component) |
+| Q5b | URL-synced state? | Query string via `replaceState` | [Component](#the-react-component) |
+| Q5c | Loading and error UX? | Status, alert with retry, aborted requests | [Component](#the-react-component) |
 
 ### Styling
 
 | # | Asks | Answer | Where |
 |---|---|---|---|
 | P2 | Compile the SCSS | `npm run build:css` in Docker | [SCSS](#compiling-the-scss) |
-| Q6a | Why these partials and tokens? | Mirror `theme.css` sections; themes can swap | [SCSS](#compiling-the-scss) |
+| Q6a | Why these partials and tokens? | Mirror `theme.css` sections | [SCSS](#compiling-the-scss) |
 | Q6b | How to add a component? | New partial, one `@use`, use tokens | [SCSS](#compiling-the-scss) |
 
 ### Auth and shared library
 
 | # | Asks | Answer | Where |
 |---|---|---|---|
-| P3 | Verify token locally or remotely, why? | Locally; no runtime dependency on auth | [Token verification](#token-verification-and-auth-outage-behaviour) |
+| P3 | Verify token locally or remotely, why? | Locally; no runtime auth dependency | [Tokens](#token-verification-and-auth-outage-behaviour) |
 | Q7a | What does each service own? | Auth: users, roles, signing. App: data | [Auth users](#auth-service-users) |
-| Q7b | Validate a token; auth down? | Local public key; only login fails | [Token verification](#token-verification-and-auth-outage-behaviour) |
-| Q7c | Revoke or change role early? | Cannot; 15-minute expiry, next login | [Token verification](#token-verification-and-auth-outage-behaviour) |
-| Q8a | Library: what in, what out? | In: claims, verify, roles. Out: signing | [Library tests](#tests-and-the-shared-library) |
-| Q8b | Pin and upgrade it? | Exact `ca-auth-lib==` pin per service | [Library tests](#tests-and-the-shared-library) |
-| Q8c | Breaking change without joint deploy? | Expand, move each service, contract | [Library tests](#tests-and-the-shared-library) |
+| Q7b | Validate a token; auth down? | Local public key; only login fails | [Tokens](#token-verification-and-auth-outage-behaviour) |
+| Q7c | Revoke or change role early? | Cannot; 15-minute expiry, next login | [Tokens](#token-verification-and-auth-outage-behaviour) |
+| Q8a | Library: what in, what out? | In: claims, verify, roles. Out: signing | [Library](#tests-and-the-shared-library) |
+| Q8b | Pin and upgrade it? | Exact `ca-auth-lib==` pin per service | [Library](#tests-and-the-shared-library) |
+| Q8c | Breaking change, no joint deploy? | Expand, move each service, contract | [Library](#tests-and-the-shared-library) |
 
 ### Write-up
 
 | # | Asks | Answer | Where |
 |---|---|---|---|
-| D5a | Modeling decisions | WP-ID keys, derived rating, `Reviewer` model | [Modeling](written-answers.md#modeling-decisions) |
-| D5b | What I would do differently | Re-import edits, deletes, sanitising, login UI | [Differently](written-answers.md#what-i-would-do-differently-with-more-time) |
-| D5c | AI defaults chosen over preference | Table of accepted defaults with reasons | [AI defaults](written-answers.md#ai-defaults-i-accepted) |
+| D5a | Modeling decisions | WP-ID keys, derived rating, `Reviewer` model | [Modeling](#modeling-decisions) |
+| D5b | What I would do differently | Edits, deletes, sanitising, login UI | [Differently](#what-i-would-do-differently-with-more-time) |
+| D5c | AI defaults chosen over preference | Accepted defaults table | [AI defaults](#ai-defaults-i-accepted) |
 
 ## Migration (WordPress to the main app)
 
@@ -343,7 +343,7 @@ From the record and the code:
 - **Handle deletes.** The import never deletes, so content removed in WP stays in the app database.
 - **Sanitise HTML.** The templates render WP content with `|safe` (`brand.content`, `review.body`). That is acceptable only because the content is trusted seed data in a dev/demo build (C13). Use an allow-list sanitiser or render only vetted markup before anything real.
 - **Add a login UI, refresh tokens and revocation, and a JWKS endpoint** for key rotation. All are out of scope or deferred in the spec (O5, O6; key rotation is by redeploy).
-- **Look at the scale of the import.** It is a single transaction reading MariaDB directly. *(inferred: at 100x it would need batching; the record asks the question in Q10 but this README does not measure it)*
+- **Scale the import.** It is a single transaction reading MariaDB directly. At 100x, use chunked bulk upserts committing per batch (Q10).
 - **Cover the framework-default behaviours in tests.** Several assumptions below (A8, A9, A10, A11, A12, A14) are still marked unvalidated in the spec.
 
 ## AI defaults I accepted

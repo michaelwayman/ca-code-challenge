@@ -248,6 +248,11 @@
   - the industry and sort controls stay native selects, restyled with project tokens (custom arrow, 44px minimum height, visible labels)
   - the selected industry and ordering are kept in the page URL query string and are restored on reload and when the link is shared
   - the component lets the user reach every brand beyond the first page (pagination controls) and shows how many brands exist
+  - the URL query string uses history.replaceState, so URL changes add no Back-button entries
+  - the params are industry, ordering and page, named as in the API
+  - PAGE_SIZE 10 is sent explicitly
+  - a shared link past the last page resets to page 1
+  - unknown URL values fall back to defaults
 - Source: brief §Pillar 3, user choice mounted on a Django page
 - Built: 2026-10-27
 
@@ -510,8 +515,9 @@
 - Decided by: you
 
 ### Q10. Which migration source (dump.sql, WP REST, MariaDB direct), which idempotency key, and how would it scale to 100x?
-- Answer: manage.py command reading MariaDB directly, upsert keyed on WP post ID
+- Answer: manage.py command reading MariaDB directly, upsert keyed on WP post ID; at 100x, chunked bulk upserts committing per batch
 - Decided by: you
+- Why: By: delegated, the README only said 100x needs batching
 
 ### Q11. Which source becomes a brand's short description? Research: all 5 brands in db/dump.sql have an empty excerpt and no short_description postmeta, content is three HTML paragraphs. Candidates: first paragraph of content, or first N characters of stripped content. To confirm with user.
 - Answer: First N characters of the stripped content, N set to 200 and cut at a word boundary, stored as an editable field on brand
@@ -968,3 +974,5 @@
 | 2026-10-27 | ALTER A12 | mkit |
 | 2026-10-27 | DONE R8 R6 | mkit |
 | 2026-10-27 | RUN done: R8 URL state and pagination, R6 query-count test | mkit |
+| 2026-10-27 | ALTER R8 | mkit |
+| 2026-10-27 | ANSWER Q10 | mkit |
