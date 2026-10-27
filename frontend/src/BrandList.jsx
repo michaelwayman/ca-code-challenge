@@ -40,19 +40,28 @@ export default function BrandList({ apiUrl, brandUrl, industries = [] }) {
   const [industry, setIndustry] = useState("");
   const [ordering, setOrdering] = useState("name");
   const [brands, setBrands] = useState([]);
+  const [status, setStatus] = useState("loading"); // loading | ready | error
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
+    setStatus("loading");
     const params = new URLSearchParams({ ordering });
     if (industry) params.append("industry", industry);
     fetch(`${apiUrl}?${params}`, { signal: controller.signal })
-      .then((r) => r.json())
-      .then((data) => setBrands(data.results))
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
+      .then((data) => {
+        setBrands(data.results);
+        setStatus("ready");
+      })
       .catch((e) => {
-        if (e.name !== "AbortError") throw e;
+        if (e.name !== "AbortError") setStatus("error");
       });
     return () => controller.abort();
-  }, [apiUrl, industry, ordering]);
+  }, [apiUrl, industry, ordering, attempt]);
 
   return (
     <div className="brand-list">
@@ -75,11 +84,25 @@ export default function BrandList({ apiUrl, brandUrl, industries = [] }) {
           </select>
         </label>
       </div>
-      <div className="grid">
-        {brands.map((b) => (
-          <BrandCard key={b.slug} brand={b} brandUrl={brandUrl} />
-        ))}
-      </div>
+      {status === "loading" && (
+        <p className="brand-list-message" role="status">Loading brands…</p>
+      )}
+      {status === "error" && (
+        <div className="brand-list-message brand-list-error" role="alert">
+          <p>Sorry, brands could not be loaded.</p>
+          <button type="button" onClick={() => setAttempt((n) => n + 1)}>Try again</button>
+        </div>
+      )}
+      {status === "ready" && brands.length === 0 && (
+        <p className="brand-list-message" role="status">No brands match this filter.</p>
+      )}
+      {status === "ready" && brands.length > 0 && (
+        <div className="grid">
+          {brands.map((b) => (
+            <BrandCard key={b.slug} brand={b} brandUrl={brandUrl} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

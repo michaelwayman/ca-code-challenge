@@ -2,3 +2,5 @@
 .brand-list-controls { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
 .brand-list-controls select { margin-left: 6px; padding: 6px 10px; }
 .brand-list blockquote { margin: 0; font-style: italic; }
+.brand-list-message { padding: 24px; text-align: center; color: var(--color-muted); }
+.brand-list-error button { margin-top: 8px; padding: 8px 16px; cursor: pointer; }
