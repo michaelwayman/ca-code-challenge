@@ -1,14 +1,26 @@
 import html
 import re
-from typing import Optional
+from typing import Literal, Optional
+from urllib.parse import urlencode
 
 from django.db.models import Avg, Count, OuterRef, Subquery
-from ninja import NinjaAPI, Schema
+from django.db.models import F
+from ninja import Field, NinjaAPI, Query, Schema
 
 from .models import Brand, Review
 
 SNIPPET_LENGTH = 140
 TAG_RE = re.compile(r"<[^>]+>")
+
+DEFAULT_PAGE_SIZE = 10
+
+ORDERINGS = {
+    "average_rating": F("avg_rating").asc(nulls_last=True),
+    "-average_rating": F("avg_rating").desc(nulls_last=True),
+    "review_count": F("n_reviews").asc(),
+    "-review_count": F("n_reviews").desc(),
+    "name": F("name").asc(),
+}
 
 api = NinjaAPI(title="Brand reviews", urls_namespace="api")
 
@@ -64,6 +76,42 @@ class BrandRow(Schema):
         return snippet(obj.top_body)
 
 
-@api.get("/brands/", response=list[BrandRow], auth=None)
-def list_brands(request):
-    return brand_queryset()
+class BrandPage(Schema):
+    count: int
+    next: Optional[str]
+    previous: Optional[str]
+    results: list[BrandRow]
+
+
+class BrandFilters(Schema):
+    industry: list[str] = []  # repeatable industry slug; unknown slugs match nothing
+    ordering: Literal[tuple(ORDERINGS)] = "name"
+    page: int = Field(1, ge=1)
+    page_size: int = Field(DEFAULT_PAGE_SIZE, ge=1)
+
+
+def page_url(request, filters, page):
+    params = [("industry", slug) for slug in filters.industry]
+    params += [("ordering", filters.ordering), ("page_size", filters.page_size), ("page", page)]
+    return request.build_absolute_uri(request.path) + "?" + urlencode(params)
+
+
+@api.get("/brands/", response=BrandPage, auth=None)
+def list_brands(request, filters: BrandFilters = Query(...)):
+    """Brand cards. Several `industry` slugs are OR-ed. A page past the end returns
+    200 with empty `results` and the real `count`."""
+    qs = brand_queryset()
+    if filters.industry:
+        qs = qs.filter(industry__slug__in=filters.industry)
+    # name then id as tie-breakers keep pages stable; ratings sort nulls last.
+    qs = qs.order_by(ORDERINGS[filters.ordering], "name", "id")
+    count = qs.count()
+    start = (filters.page - 1) * filters.page_size
+    last_page = max(1, -(-count // filters.page_size))
+    results = list(qs[start : start + filters.page_size])
+    return {
+        "count": count,
+        "next": page_url(request, filters, filters.page + 1) if start + filters.page_size < count else None,
+        "previous": page_url(request, filters, min(filters.page - 1, last_page)) if filters.page > 1 else None,
+        "results": results,
+    }
