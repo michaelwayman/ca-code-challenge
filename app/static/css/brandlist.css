@@ -4,3 +4,8 @@
 .brand-list blockquote { margin: 0; font-style: italic; }
 .brand-list-message { padding: 24px; text-align: center; color: var(--color-muted); }
 .brand-list-error button { margin-top: 8px; padding: 8px 16px; cursor: pointer; }
+.brand-grid { list-style: none; margin: 0; padding: 0; }
+.brand-list select:focus-visible,
+.brand-list button:focus-visible,
+.brand-list a:focus-visible { outline: 3px solid #1d4ed8; outline-offset: 2px; }
+.brand-list .card:focus-within { outline: 3px solid #1d4ed8; outline-offset: 2px; }

@@ -176,6 +176,21 @@ services:
       - ./frontend:/work
       - ./app/static/dist:/work/dist
 
+  browser:
+    image: mcr.microsoft.com/playwright:v1.49.1-noble
+    profiles: ["tools"]
+    working_dir: /work
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      BASE_URL: http://app:8000
+      OUT_DIR: /out
+    volumes:
+      - ./scripts/browser:/work
+      - ./scripts/browser-out:/out
+    entrypoint: ["sh", "-c", "npm install --no-audit --no-fund >/dev/null 2>&1 && node check.mjs"]
+
 volumes:
   db_data:
   wp_files:

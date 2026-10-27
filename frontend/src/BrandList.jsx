@@ -23,7 +23,7 @@ function Stars({ rating }) {
 
 function BrandCard({ brand, brandUrl }) {
   return (
-    <article className="card">
+    <li className="card">
       {brand.industry && <span className="badge">{brand.industry}</span>}
       <h3><a href={brandUrl.replace("__slug__", brand.slug)}>{brand.name}</a></h3>
       <div>
@@ -32,7 +32,7 @@ function BrandCard({ brand, brandUrl }) {
       </div>
       <p className="excerpt">{brand.short_description}</p>
       {brand.top_review_snippet && <blockquote className="meta">"{brand.top_review_snippet}"</blockquote>}
-    </article>
+    </li>
   );
 }
 
@@ -65,7 +65,7 @@ export default function BrandList({ apiUrl, brandUrl, industries = [] }) {
 
   return (
     <div className="brand-list">
-      <div className="brand-list-controls">
+      <div className="brand-list-controls" role="group" aria-label="Filter and sort brands">
         <label>
           Industry{" "}
           <select value={industry} onChange={(e) => setIndustry(e.target.value)}>
@@ -97,11 +97,11 @@ export default function BrandList({ apiUrl, brandUrl, industries = [] }) {
         <p className="brand-list-message" role="status">No brands match this filter.</p>
       )}
       {status === "ready" && brands.length > 0 && (
-        <div className="grid">
+        <ul className="grid brand-grid" aria-label="Brands">
           {brands.map((b) => (
             <BrandCard key={b.slug} brand={b} brandUrl={brandUrl} />
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );

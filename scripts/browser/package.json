@@ -1,0 +1,2 @@
+{ "name": "browser-check", "private": true, "type": "module",
+  "dependencies": { "playwright": "1.49.1", "axe-core": "4.10.2" } }

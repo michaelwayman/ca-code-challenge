@@ -2,7 +2,7 @@ SHELL := /bin/bash
 COMPOSE := docker compose
 WPCLI := $(COMPOSE) run --rm wpcli
 
-.PHONY: node help up down restart logs reset wp bootstrap dump status
+.PHONY: browser-check node help up down restart logs reset wp bootstrap dump status
 
 help:
 	@echo "Targets:"
@@ -45,3 +45,8 @@ status:
 # Node tooling (bundle, SCSS) runs in Docker: make node ARGS="npm run build"
 node:
 	$(COMPOSE) run --rm node $(ARGS)
+
+# Headless-browser checks (focus ring, axe); screenshots land in scripts/browser-out/
+browser-check:
+	@mkdir -p scripts/browser-out
+	$(COMPOSE) run --rm browser
