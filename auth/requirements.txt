@@ -3,3 +3,5 @@ django-ninja==1.*
 psycopg[binary]==3.*
 PyMySQL==1.*
 ca-auth-lib==0.1.0
+PyJWT>=2.8
+cryptography>=42

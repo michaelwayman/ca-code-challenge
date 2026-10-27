@@ -2,7 +2,7 @@ SHELL := /bin/bash
 COMPOSE := docker compose
 WPCLI := $(COMPOSE) run --rm wpcli
 
-.PHONY: lib-test browser-check node help up down restart logs reset wp bootstrap dump status
+.PHONY: jwt-keys lib-test browser-check node help up down restart logs reset wp bootstrap dump status
 
 help:
 	@echo "Targets:"
@@ -54,3 +54,10 @@ browser-check:
 # Shared library tests: plain python container, no Django or Ninja
 lib-test:
 	$(COMPOSE) run --rm lib-test
+
+# Dev RS256 keypair into .env: AUTH_JWT_PRIVATE_KEY (auth service) and APP_JWT_PUBLIC_KEY (main app, later).
+# Never overwrites existing keys; .env is git-ignored.
+jwt-keys:
+	@touch .env
+	@if grep -q '^AUTH_JWT_PRIVATE_KEY=' .env; then echo "AUTH_JWT_PRIVATE_KEY already in .env, not overwriting"; else \
+	  $(COMPOSE) run --rm -T --no-deps auth python /scripts/gen_jwt_keys.py >> .env && echo "Wrote AUTH_JWT_PRIVATE_KEY and APP_JWT_PUBLIC_KEY to .env; run 'docker compose up -d auth' to apply"; fi

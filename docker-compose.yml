@@ -166,6 +166,7 @@ services:
       POSTGRES_USER: ${AUTH_DB_USER:-auth}
       POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:-auth}
       AUTH_DEV_PASSWORD: ${AUTH_DEV_PASSWORD:-dev-password}
+      AUTH_JWT_PRIVATE_KEY: ${AUTH_JWT_PRIVATE_KEY:-}
       WP_DB_HOST: db
       WP_DB_NAME: ${WORDPRESS_DB_NAME:-wp}
       WP_DB_USER: ${WORDPRESS_DB_USER:-wp}
@@ -173,6 +174,7 @@ services:
       WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX:-wp_}
     volumes:
       - ./auth:/srv
+      - ./scripts:/scripts:ro
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/health/')"]
       interval: 5s

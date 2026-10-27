@@ -46,6 +46,23 @@ docker compose run --rm auth python manage.py import_wp_users
 
 It prints `User created=N updated=N unchanged=N`; a second run creates nothing. WP password hashes are never read: every user gets the dev password from `AUTH_DEV_PASSWORD` (default `dev-password`, set in `.env` to override). WP administrator and editor become `editor`, all others `reader`.
 
+## Login (auth service)
+
+`POST /api/auth/login` takes JSON `username` and `password` and returns `access_token`, `token_type` (`Bearer`) and `expires_in` (900). Tokens are RS256 JWTs with claims `iss` (`ca-auth`), `sub` (auth user id), `role` (`reader` or `editor`), `iat` and `exp` (`exp = iat + 900`); claim names come from `ca_auth_lib`. Wrong credentials return 401 with no token. There is no login UI and no refresh token.
+
+The auth service signs with the private key in env var `AUTH_JWT_PRIVATE_KEY` (PEM) and never generates one: if it is unset, login returns 503 with an error. Generate a dev keypair once (also writes `APP_JWT_PUBLIC_KEY`, which the main app will read later; `.env` is git-ignored):
+
+```
+make jwt-keys
+docker compose up -d auth
+docker compose run --rm auth python manage.py import_wp_users   # first time only
+curl -s -X POST http://localhost:8001/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username": "admin", "password": "dev-password"}'
+```
+
+Auth tests: `docker compose run --rm auth python manage.py test`.
+
 ## Stack
 
 | Service     | Image                            | Port  | Purpose                                |
