@@ -193,6 +193,7 @@
   - the set of Django slugs equals the set of WP permalinks
   - Visual: at 375px the pages show one column with no horizontal scroll
   - Visual: at 1280px content is centred within the 1100px container
+  - the brand detail page shows short_description
 - Source: brief §Pillar 1
 
 ### R5. Brand listing endpoint returns card-ready rows
@@ -203,6 +204,8 @@
   - every row has name, slug, industry, average rating, review count, short description and top review snippet
   - row values equal what the brand detail page shows
   - if A3 is proven wrong the industry field is returned as a list named industries
+  - industry is the name string or null
+  - the top review snippet strips tags and collapses whitespace before 140 chars
 - Source: brief §Pillar 2
 
 ### R6. Brand listing is filterable, sortable and paginated
@@ -212,6 +215,12 @@
   - filtering by an industry returns only brands in that industry
   - sorting by average rating and by review count each return rows in the requested order in both directions
   - results are paginated with a documented page size and a request beyond the last page returns a defined response
+  - page_size defaults to 10 and is uncapped
+  - ties by name then id
+  - nulls last for rating
+  - a past-end page returns 200 with empty results
+  - several industry slugs are OR-ed and an unknown slug matches nothing
+  - invalid ordering or page returns 422
 - Source: brief §Pillar 2
 
 ### R7. Top review snippet is defined and documented
@@ -252,6 +261,9 @@
   - the list uses list markup and each control has a programmatic label
   - an axe check run in the Node container component test reports zero violations
   - Visual: focus ring visible on filter, sort and cards at 1280px checked from a screenshot taken by a headless browser container
+  - cards are li elements
+  - focus is a 3px blue outline
+  - colour contrast is checked in the browser container, not jsdom
 - Source: brief §Pillar 3
 
 ### R11. BrandList is responsive
@@ -272,6 +284,8 @@
   - each commented section of reference/theme.css maps to a partial
   - the tree has an entry file and partials split by tokens, base, layout and components
   - the README explains how to compile
+  - no component CSS outside frontend/scss
+  - the temporary brandlist.css is folded into the SCSS tree
 - Source: brief §Pillar 4
 
 ### R13. Auth service owns users and its own re-runnable import creates them from wp_users
@@ -284,6 +298,9 @@
   - a second consecutive run of that command creates no new users and reports created, updated and unchanged counts
   - after the import the number of auth users equals the number of wp_users
   - each imported user can log in with the dev password read from an environment variable with a documented local default, never hardcoded in source
+  - auth user IDs are UUIDs derived deterministically from the WP user ID (UUIDv5 with a fixed namespace constant in the importer)
+  - the auth database stores no WP user ID
+  - a rerun derives the same UUIDs and creates no duplicates
 - Source: brief §Pillar 5, user choice reset passwords
 
 ### R14. Login exchanges credentials for a token
@@ -296,6 +313,11 @@
   - login is POST /api/auth/login with JSON username and password and returns JSON access_token, token_type and expires_in
   - the token is an RS256 JWT with claims sub, role, iat, exp and iss
   - the library core defines these claim names and the auth service imports them
+  - the token claim sub is the auth user's UUID string
+  - the signing key is read from AUTH_JWT_PRIVATE_KEY and login returns 503 when it is unset
+  - iss is ca-auth
+  - role is reader or editor
+  - iat and exp are integer epoch seconds with exp = iat + 900
 - Source: brief §Pillar 5
 
 ### R15. Auth service is the source of truth for at least two roles
@@ -306,6 +328,7 @@
   - a freshly issued reader token carries the reader role and an editor token carries the editor role
   - after a role is changed in the auth service an old token keeps its old role until it expires, shown in a test with an injectable clock
   - a fresh login after the change carries the new role
+  - editor satisfies a reader requirement
 - Source: brief §Pillar 5
 
 ### R16. Editor-only brand write endpoint in the main app
@@ -321,6 +344,9 @@
   - an invalid or expired token returns 401
   - checks run in the order 401, 403, 404 so an unknown slug does not leak to anonymous callers
   - GET /api/brands/ and the pages still return 200 without a token
+  - short_description accepts up to 500 characters
+  - whitespace is stripped before the 1-500 length check
+  - the response is the full brand row
 - Source: brief §Pillar 5
 
 ### R17. Token verification approach and auth outage behaviour are decided and documented
@@ -330,6 +356,7 @@
   - the README states whether the main app verifies tokens locally or calls the auth service and why
   - with the auth container stopped, public GET requests still return 200 and PATCH behaves exactly as documented
   - the README states how a token is revoked or a role changed before expiry
+  - verification rejects tokens where exp - iat is not 900 or iat or exp is not an integer
 - Source: brief §Pillar 5
 
 ### R18. Shared library is an installable package used by both services
@@ -380,6 +407,7 @@
   - a README section of about half a page covers modeling decisions
   - the same section lists what would be done differently with more time
   - the same section lists each place the AI default was kept over own preference and why
+  - the candidate confirms the README section before submission
 - Source: brief §What to deliver
 
 ## Out of scope
@@ -890,3 +918,16 @@
 | 2026-10-27 | ADD A17: An injectable clock in the library core is cheap to add and test | mkit |
 | 2026-10-27 | ADD A18: Logging in every imported user is cheap to test | mkit |
 | 2026-10-27 | ANSWER Q16 | mkit |
+| 2026-10-27 | ALTER R13 | mkit |
+| 2026-10-27 | ALTER R14 | mkit |
+| 2026-10-27 | ALTER R5 | mkit |
+| 2026-10-27 | ALTER R6 | mkit |
+| 2026-10-27 | ALTER R12 | mkit |
+| 2026-10-27 | ALTER R10 | mkit |
+| 2026-10-27 | ALTER R14 | mkit |
+| 2026-10-27 | ALTER R14 | mkit |
+| 2026-10-27 | ALTER R15 | mkit |
+| 2026-10-27 | ALTER R17 | mkit |
+| 2026-10-27 | ALTER R16 | mkit |
+| 2026-10-27 | ALTER R4 | mkit |
+| 2026-10-27 | ALTER R22 | mkit |

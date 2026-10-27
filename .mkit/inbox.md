@@ -1,2 +1,17 @@
 # Inbox
 
+- [x] I1 2026-10-27 adjust: assumed: R5 industry is returned as the industry name string (null if none); top_review_snippet strips HTML tags and collapses whitespace before taking 140 chars; listing returns a bare list until R6 adds the pagination envelope -> R5
+- [x] I2 2026-10-27 adjust: assumed: R6 default page_size 10 (uncapped max), ordering values average_rating|-average_rating|review_count|-review_count|name (default name), ties by name,id, nulls last for rating; page past the end returns 200 with empty results and real count; multiple industry slugs OR-ed, unknown slug matches nothing; invalid ordering/page returns Ninja 422. Needs documenting in README (R21) -> R6
+- [x] I3 2026-10-27 adjust: assumed: R8 BrandList lives on the homepage; industry options are passed from Django via json_script (no industries endpoint); built bundle app/static/dist/brandlist.js is committed so a clean clone works without a build step (rebuild: make node ARGS='npm run build'); temporary app/static/css/brandlist.css to be folded into SCSS under R12; R8 fetches only page 1 (default size 10), no pagination UI -> R12
+- [x] I4 2026-10-27 adjust: assumed: R10 cards are li elements, focus ring is a 3px blue outline on controls and card focus-within; component axe test disables color-contrast (jsdom cannot compute it), contrast checked by axe in the real browser container instead; Playwright image v1.49.1 added as compose 'browser' service (profile tools, make browser-check) -> R10
+- [x] I5 2026-10-27 adjust: decision (By: user): auth service reads RS256 private key from env var AUTH_JWT_PRIVATE_KEY (PEM); a make target generates a dev keypair into .env; auth refuses to issue tokens if unset (for R14). Why: keeps secrets out of the image, dev/demo friendly -> R14
+- [x] I6 2026-10-27 adjust: decision (By: user): build order is library first (R18, R19), then R14 uses it for claim names. Why: R14 acceptance says the auth service imports claim names from the library core -> build-order decision, no spec change
+- [x] I7 2026-10-27 adjust: decision (By: user): R14 defaults: iss=ca-auth, sub=auth user id as string, role reader|editor, iat/exp integer epoch seconds with exp=iat+900, POST /api/auth/login, add PyJWT and cryptography to requirements -> R14
+- [x] I8 2026-10-27 adjust: assumed editor satisfies a reader requirement (role hierarchy) in ca_auth_lib.roles -> R15
+- [x] I9 2026-10-27 adjust: assumed verify_token also rejects tokens whose exp-iat != 900 and non-integer iat/exp; signing stays in auth service, not the lib -> R17
+- [ ] I10 2026-10-27 adjust: assumed R18 criterion 3 (main app protected endpoint imports from the library) is deferred to R16, which is not built; only criteria 1 and 2 verified
+- [x] I11 2026-10-27 adjust: assumed missing AUTH_JWT_PRIVATE_KEY returns 503 on login (not 500/401) -> R14
+- [x] I12 2026-10-27 adjust: assumed R16: widened Brand.short_description column 255->500 (migration 0002) so the 500-char limit is storable -> R16
+- [x] I13 2026-10-27 adjust: assumed R16: brand detail page did not render short_description; added it as a paragraph under the hero heading -> R4
+- [x] I14 2026-10-27 adjust: assumed R16: body whitespace is stripped before the 1-500 length check; PATCH returns the full BrandRow shape -> R16
+- [x] I15 2026-10-27 adjust: assumed R22: README section is a DRAFT; own-preference column and 'do differently' list drafted from the record, candidate must confirm; 422-before-404 for PATCH with unknown slug and invalid body is inferred from Ninja behaviour, untested -> R22

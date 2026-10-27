@@ -64,6 +64,43 @@ make node ARGS="npm run build:css"
 
 This writes `app/static/css/theme.css`, which `base.html` links. Do not edit that file by hand and do not edit `reference/theme.css`. To add a component, create `frontend/scss/components/_name.scss` and add an `@use` line to `main.scss`; use the custom properties from `tokens/_tokens.scss` rather than literal colours.
 
+## Challenge coverage
+
+Every README ask and live-defence question in `CHALLENGE.md`, one row each, with the answer and where it is documented. Maintained with the `readme-coverage` skill. **D** = README deliverable, **P** = documentation ask inside a pillar, **Q** = decision to defend live.
+
+| # | Challenge asks | Answer | Where |
+|---|---|---|---|
+| D1 | How to run the Django app, the auth service and the React component locally | `make up`, `make jwt-keys`, `make up`; main app on 8000, auth on 8001; the component is built with `make node ARGS="npm run build"`, and the built bundle is committed | [Quick start](#quick-start), [Running the main app](#running-the-main-app), [The React component](#the-react-component) |
+| D2 | How to get a token and call the protected endpoint | `POST /api/auth/login` returns an RS256 JWT; send it as `Authorization: Bearer` to `PATCH /api/brands/{slug}/` (editor only) | [Login](#login-auth-service) |
+| D3 | How to run the shared library's tests and how a new version reaches each service | `make lib-test`; bump `pyproject.toml`, change the exact pin in both `requirements.txt`, rebuild | [Tests and the shared library](#tests-and-the-shared-library) |
+| D4 | How to run the migration and re-run it safely | `docker compose run --rm app python manage.py import_wp`; upserts on WP ID in one transaction, so a rerun reports `created=0` | [Migration](#migration-wordpress-to-the-main-app) |
+| D5a | Modeling decisions | Rows keyed on WP ID, derived average rating, `Reviewer` model, typed ACF columns plus Yoast JSON | [Modeling decisions](#modeling-decisions) |
+| D5b | What you would do differently with more time | Edits surviving re-import, rating reconciliation, deletes, HTML sanitising, login UI/refresh/revocation | [What I would do differently](#what-i-would-do-differently-with-more-time) |
+| D5c | Places you chose AI's default over your preference | Table of accepted defaults (I1 to I14) with reasons | [AI defaults I accepted](#ai-defaults-i-accepted) |
+| P1 | Define and document "top review" (Pillar 2) | Highest rating, ties by newest `published_at` then highest id; snippet is the first 140 characters of the stripped body | [Top review snippet](#top-review-snippet) |
+| P2 | How to compile the SCSS (Pillar 4) | `make node ARGS="npm run build:css"` writes `app/static/css/theme.css` | [Compiling the SCSS](#compiling-the-scss) |
+| P3 | Local token verification or a call to the auth service, and why (Pillar 5) | Local: the main app checks the RS256 signature with a public key, so there is no runtime dependency on auth and no per-request hop | [Token verification](#token-verification-and-auth-outage-behaviour) |
+| Q1a | Average rating: store, derive or both? | Derived: an aggregate over reviews rounded to 1 decimal; the WP ACF `average_rating` is not imported, so the API can differ from WP | [Modeling decisions](#modeling-decisions) |
+| Q1b | Reviewer users: Django users, a Reviewer model or denormalized strings? | A `Reviewer` model, because the main app stores no users, passwords or roles | [Modeling decisions](#modeling-decisions) |
+| Q2 | Postmeta: which fields became model fields, JSON or were dropped? | ACF `website_url`, `founded_year`, `headquarters` are columns; `_yoast_wpseo_*` kept as JSON on `Brand.seo`; other WP-internal keys dropped | [Modeling decisions](#modeling-decisions) |
+| Q3a | Migration: why this approach? | A `manage.py` command reading MariaDB directly, upserting on WP ID. Why: the data is already loaded in the `db` service, so querying it avoids parsing the SQL dump | [Migration](#migration-wordpress-to-the-main-app) |
+| Q3b | How do you re-run it safely? | Upsert on WP ID, one transaction, never deletes, second run prints `created=0 updated=0` and a test covers it | [Migration](#migration-wordpress-to-the-main-app) |
+| Q3c | How would it scale to 100x the data? | Not measured. Plan: read in ID-range chunks, bulk upsert each chunk, and commit per batch instead of one transaction | [What I would do differently](#what-i-would-do-differently-with-more-time) |
+| Q4a | Why this pagination shape? | `page`/`page_size` with a `{count, next, previous, results}` envelope: familiar DRF-style conventions, so clients need nothing new to learn | [Running the main app](#running-the-main-app) |
+| Q4b | Why these filter/sort parameter names? | Repeatable `industry` slug (several OR-ed) and one `ordering` param (`name`, `average_rating`, `review_count`, with `-` for descending): the same familiar DRF-style conventions | [Running the main app](#running-the-main-app) |
+| Q4c | What would change if a mobile client also consumed it? | Nothing in the contract: it already suits a mobile client | [Running the main app](#running-the-main-app) |
+| Q5a | Where does `<BrandList />` state live? | In the component (`useState`): industry, ordering, brands, status | [The React component](#the-react-component) |
+| Q5b | How is URL-synced filter/sort state handled? | It is not: no URL sync, accepted as assumption A13 (unvalidated) | [AI defaults I accepted](#ai-defaults-i-accepted) |
+| Q5c | Loading/error UX? | `role="status"` loading and empty messages; `role="alert"` error with a retry; requests are aborted when a newer one starts | [The React component](#the-react-component) |
+| Q6a | SCSS: why these partials and tokens? | One partial per commented section of `reference/theme.css`, grouped as `tokens/`, `base/`, `layout/`, `components/`; tokens are the `:root` custom properties. Why: it matches the previous pattern, and other themes that use the same selectors could be swapped in alongside | [Compiling the SCSS](#compiling-the-scss) |
+| Q6b | How does a second engineer add a component without breaking yours? | Add `components/_name.scss`, add an `@use` line to `main.scss`, use the token custom properties rather than literal colours | [Compiling the SCSS](#compiling-the-scss) |
+| Q7a | What does the auth service own, what does the main app own? | Auth owns users, passwords, roles and token signing; the main app owns brand data and verifies tokens only | [Auth service users](#auth-service-users), [Token verification](#token-verification-and-auth-outage-behaviour) |
+| Q7b | How does the main app validate a token, and what if auth is down? | Locally with the public key (signature, `iss`, `exp`, `role`); public endpoints and unexpired editor tokens keep working, only login fails | [Token verification](#token-verification-and-auth-outage-behaviour) |
+| Q7c | How do you revoke a token or change a role before it expires? | You cannot: 15-minute expiry is the mechanism, role changes apply at the next login, and rotating the signing key invalidates everything | [Token verification](#token-verification-and-auth-outage-behaviour) |
+| Q8a | Shared library: what went in and what stayed out? | In: claims, RS256 verification, role checks, all framework-free. Out: signing (auth service only) and the Ninja auth wrapper (main app) | [Tests and the shared library](#tests-and-the-shared-library) |
+| Q8b | How do the two services pin and upgrade it? | Both images `pip install` it from `lib/ca_auth_lib`; each `requirements.txt` pins `ca-auth-lib==0.1.0` exactly | [Tests and the shared library](#tests-and-the-shared-library) |
+| Q8c | How do you release a breaking change without deploying both at once? | Expand and contract: ship a version supporting old and new, move each service separately, then remove the old behaviour | [Tests and the shared library](#tests-and-the-shared-library) |
+
 ## Migration (WordPress to the main app)
 
 `import_wp` reads the WordPress MariaDB (`db` service, no WordPress container needed) directly and writes industries, brands, reviewers and reviews into the main app database:

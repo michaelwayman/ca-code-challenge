@@ -18,26 +18,10 @@ Build only what is listed. Out-of-scope items are decisions, not gaps. Anything 
 - C13 Built for dev and demo as a take-home, not for production deployment
 
 ## Build
-- **R2** [P0] Clean relational domain model for brands, reviews, industries and reviewer users
-  - Django migrations create tables for brand, review, industry and reviewer data with foreign keys from review to brand and brand to industry
-  - no table stores generic key and value postmeta rows
-  - Yoast keys are kept as one JSON field on brand
-  - makemigrations --check reports no pending changes
-  - a reviewer row carries a nullable wp_user_id with no foreign key across databases
-  - after the migration each of the 8 reviewers in the dump has the wp_user_id of its WP author and the review counts per reviewer match the dump
-- **R3** [P0] Re-runnable WP content migration command in the main app
-  - one documented main app command imports brands, reviews, industries and reviewers from the WP source and never creates accounts, passwords or roles
-  - Django row counts equal the WP published counts after the first run
-  - a second consecutive run creates no new rows and reports created, updated and unchanged counts
-  - the command works inside docker compose
-- **R4** [P0] Server-rendered homepage, brand detail and review detail pages
-  - GET / returns 200 HTML containing a hero and the most recent reviews with JavaScript disabled
-  - for every WP brand slug GET /brand/<slug>/ returns 200 and shows name, rating and its reviews
-  - for every WP review slug GET /review/<slug>/ returns 200
-  - an unknown slug returns 404
-  - the set of Django slugs equals the set of WP permalinks
-  - Visual: at 375px the pages show one column with no horizontal scroll
-  - Visual: at 1280px content is centred within the 1100px container
+- **R22** [P0] README records modeling decisions, what to do differently and AI defaults accepted
+  - a README section of about half a page covers modeling decisions
+  - the same section lists what would be done differently with more time
+  - the same section lists each place the AI default was kept over own preference and why
 
 ## Do NOT build
 - O1 Migrating the WP admin and editor experience
