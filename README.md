@@ -63,6 +63,8 @@ curl -s -X POST http://localhost:8001/api/auth/login \
 
 Auth tests: `docker compose run --rm auth python manage.py test`.
 
+All suites (main app, auth, library, frontend): `make test`. Main app tests alone: `docker compose exec app python manage.py test` (includes `import_wp` idempotency, which reads the compose WP database into the throwaway test database; demo data is untouched).
+
 ## Token verification and auth outage behaviour
 
 **The main app verifies tokens locally; it never calls the auth service.** `PATCH /api/brands/{slug}/` checks the RS256 signature, `iss`, `exp` and the `role` claim with `ca_auth_lib` against the public key in env var `APP_JWT_PUBLIC_KEY` (written to `.env` by `make jwt-keys`). Why: the main app needs only the public key, so it has no runtime dependency on the auth service and no per-request network hop, and an auth outage cannot take the main app down. The cost is that the main app cannot see revocations or role changes until a token expires (see below).
