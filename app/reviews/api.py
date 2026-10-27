@@ -5,7 +5,12 @@ from urllib.parse import urlencode
 
 from django.db.models import Avg, Count, OuterRef, Subquery
 from django.db.models import F
+from ca_auth_lib import ROLE_EDITOR, AuthError, InsufficientRole, require_role, verify_token
+from django.conf import settings
+from django.shortcuts import get_object_or_404
 from ninja import Field, NinjaAPI, Query, Schema
+from ninja.security import HttpBearer
+from pydantic import ConfigDict
 
 from .models import Brand, Review
 
@@ -22,7 +27,37 @@ ORDERINGS = {
     "name": F("name").asc(),
 }
 
+
+
+class JWTAuth(HttpBearer):
+    """Thin Ninja adapter: token verification and role checks come from ca_auth_lib.
+
+    A missing, invalid or expired token yields None (401). A valid token with too
+    low a role raises InsufficientRole, mapped to 403 below. Runs before the path
+    is resolved, so 401 and 403 come before 404.
+    """
+
+    def __init__(self, role):
+        super().__init__()
+        self.role = role
+
+    def authenticate(self, request, token):
+        key = settings.JWT_PUBLIC_KEY
+        if not key:
+            return None  # no key configured: nothing can verify, fail closed
+        try:
+            claims = verify_token(token, key)
+        except AuthError:
+            return None
+        return require_role(claims, self.role)
+
+
 api = NinjaAPI(title="Brand reviews", urls_namespace="api")
+
+
+@api.exception_handler(InsufficientRole)
+def insufficient_role(request, exc):
+    return api.create_response(request, {"detail": "Forbidden"}, status=403)
 
 
 def top_review_body_subquery():
@@ -115,3 +150,18 @@ def list_brands(request, filters: BrandFilters = Query(...)):
         "previous": page_url(request, filters, min(filters.page - 1, last_page)) if filters.page > 1 else None,
         "results": results,
     }
+
+
+class BrandUpdate(Schema):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+
+    short_description: str = Field(..., min_length=1, max_length=500)
+
+
+@api.patch("/brands/{slug}/", response=BrandRow, auth=JWTAuth(ROLE_EDITOR))
+def update_brand(request, slug: str, payload: BrandUpdate):
+    """Editor-only. Only short_description is writable (plain text, 1-500 chars)."""
+    brand = get_object_or_404(Brand, slug=slug)
+    brand.short_description = payload.short_description
+    brand.save(update_fields=["short_description"])
+    return get_object_or_404(brand_queryset(), pk=brand.pk)

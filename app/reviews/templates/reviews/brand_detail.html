@@ -7,6 +7,7 @@
     {% if brand.industry %}<span class="badge">{{ brand.industry.name }}</span>{% endif %}
     <h1>{{ brand.name }}</h1>
     {% stars rating %}
+    {% if brand.short_description %}<p class="brand-short-description">{{ brand.short_description }}</p>{% endif %}
     <div class="brand-meta">
       {% if brand.headquarters %}<span><strong>HQ:</strong> {{ brand.headquarters }}</span>{% endif %}
       {% if brand.founded_year %}<span><strong>Founded:</strong> {{ brand.founded_year }}</span>{% endif %}

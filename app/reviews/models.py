@@ -32,7 +32,7 @@ class Brand(models.Model):
     slug = models.SlugField(max_length=200, unique=True)
     name = models.CharField(max_length=200)
     content = models.TextField(blank=True)
-    short_description = models.CharField(max_length=255, blank=True)
+    short_description = models.CharField(max_length=500, blank=True)
     website_url = models.URLField(blank=True)
     founded_year = models.PositiveSmallIntegerField(null=True, blank=True)
     headquarters = models.CharField(max_length=200, blank=True)

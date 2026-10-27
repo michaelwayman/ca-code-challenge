@@ -139,6 +139,7 @@ services:
       WP_DB_USER: ${WORDPRESS_DB_USER:-wp}
       WP_DB_PASSWORD: ${WORDPRESS_DB_PASSWORD:-wp}
       WORDPRESS_TABLE_PREFIX: ${WORDPRESS_TABLE_PREFIX:-wp_}
+      APP_JWT_PUBLIC_KEY: ${APP_JWT_PUBLIC_KEY:-}
     volumes:
       - ./app:/srv
     healthcheck:

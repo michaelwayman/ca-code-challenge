@@ -37,3 +37,6 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
+
+# RS256 public key (PEM, "\\n" allowed for newlines) used to verify auth-service tokens locally.
+JWT_PUBLIC_KEY = os.environ.get("APP_JWT_PUBLIC_KEY", "").strip().replace("\\n", "\n")
