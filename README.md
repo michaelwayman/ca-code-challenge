@@ -117,17 +117,17 @@ Users are migrated separately into the auth service (`import_wp_users`, see Auth
 
 ## Auth service users
 
-The auth service owns users, passwords and roles (the main app stores none). Import them from WordPress (re-runnable, keyed on WP user ID):
+The auth service owns users, passwords and roles (the main app stores none). Import them from WordPress (re-runnable: each WP user ID is turned into a UUIDv5 that becomes the auth user's ID):
 
 ```
 docker compose run --rm auth python manage.py import_wp_users
 ```
 
-It prints `User created=N updated=N unchanged=N`; a second run creates nothing. WP password hashes are never read: every user gets the dev password from `AUTH_DEV_PASSWORD` (default `dev-password`, set in `.env` to override). WP administrator and editor become `editor`, all others `reader`.
+It prints `User created=N updated=N unchanged=N`; a second run creates nothing. The UUID is derived from the WP user ID with a fixed namespace constant in the importer, so the same WP user always gets the same UUID and the auth database stores no WP user ID. There is no integer-to-UUID data migration: after pulling this change, reset the auth database volume and rerun the import. WP password hashes are never read: every user gets the dev password from `AUTH_DEV_PASSWORD` (default `dev-password`, set in `.env` to override). WP administrator and editor become `editor`, all others `reader`.
 
 ## Login (auth service)
 
-`POST /api/auth/login` takes JSON `username` and `password` and returns `access_token`, `token_type` (`Bearer`) and `expires_in` (900). Tokens are RS256 JWTs with claims `iss` (`ca-auth`), `sub` (auth user id), `role` (`reader` or `editor`), `iat` and `exp` (`exp = iat + 900`); claim names come from `ca_auth_lib`. Wrong credentials return 401 with no token. There is no login UI and no refresh token.
+`POST /api/auth/login` takes JSON `username` and `password` and returns `access_token`, `token_type` (`Bearer`) and `expires_in` (900). Tokens are RS256 JWTs with claims `iss` (`ca-auth`), `sub` (the auth user's UUID), `role` (`reader` or `editor`), `iat` and `exp` (`exp = iat + 900`); claim names come from `ca_auth_lib`. Wrong credentials return 401 with no token. There is no login UI and no refresh token.
 
 The auth service signs with the private key in env var `AUTH_JWT_PRIVATE_KEY` (PEM) and never generates one: if it is unset, login returns 503 with an error. Generate the dev keypair once (this is the `make jwt-keys` step of the quick start; it also writes `APP_JWT_PUBLIC_KEY`, which the main app reads to verify tokens; `.env` is git-ignored and an existing key is never overwritten). Containers read `.env` only when created, so recreate them afterwards with `make up` (or `docker compose up -d`). Then get a token and call the protected endpoint. Seeded logins are `admin` (editor) and e.g. `sarah_k` (reader), all with the dev password:
 

@@ -46,6 +46,29 @@ class LoginTests(TestCase):
         self.assertNotIn("access_token", r.json())
 
 
+class UserIdTests(TestCase):
+    """R13/R14: auth user IDs are UUIDs; imported ones are derived from the WP ID."""
+
+    def test_user_pk_is_a_uuid_and_the_token_sub_is_that_uuid(self):
+        import uuid
+        user = User.objects.create_user("ed", password="pw", role=User.EDITOR)
+        self.assertIsInstance(user.pk, uuid.UUID)
+        with mock.patch.dict(os.environ, {"AUTH_JWT_PRIVATE_KEY": PRIVATE}):
+            r = self.client.post("/api/auth/login", {"username": "ed", "password": "pw"},
+                                 content_type="application/json")
+        sub = verify_token(r.json()["access_token"], PUBLIC)["sub"]
+        self.assertEqual(uuid.UUID(sub), user.pk)
+
+    def test_wp_id_derives_the_same_uuid_every_time(self):
+        from .management.commands.import_wp_users import user_uuid_from_wp_id
+        self.assertEqual(user_uuid_from_wp_id(1), user_uuid_from_wp_id(1))
+        self.assertNotEqual(user_uuid_from_wp_id(1), user_uuid_from_wp_id(2))
+        self.assertEqual(str(user_uuid_from_wp_id(1)), "83c5d723-594d-5714-9110-5e433d22540a")
+
+    def test_user_model_stores_no_wp_user_id(self):
+        self.assertNotIn("wp_user_id", [f.name for f in User._meta.get_fields()])
+
+
 class RoleTests(TestCase):
     """R15: the auth service is the source of truth for roles."""
 

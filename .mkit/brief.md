@@ -18,10 +18,30 @@ Build only what is listed. Out-of-scope items are decisions, not gaps. Anything 
 - C13 Built for dev and demo as a take-home, not for production deployment
 
 ## Build
-- **R22** [P0] README records modeling decisions, what to do differently and AI defaults accepted
-  - a README section of about half a page covers modeling decisions
-  - the same section lists what would be done differently with more time
-  - the same section lists each place the AI default was kept over own preference and why
+- **R13** [P0] Auth service owns users and its own re-runnable import creates them from wp_users
+  - auth service runs as its own container with its own database service
+  - the main app database schema contains no password or role columns
+  - one documented auth service command imports wp_users and their roles from the WP source
+  - a second consecutive run of that command creates no new users and reports created, updated and unchanged counts
+  - after the import the number of auth users equals the number of wp_users
+  - each imported user can log in with the dev password read from an environment variable with a documented local default, never hardcoded in source
+  - auth user IDs are UUIDs derived deterministically from the WP user ID (UUIDv5 with a fixed namespace constant in the importer)
+  - the auth database stores no WP user ID
+  - a rerun derives the same UUIDs and creates no duplicates
+  - the UUIDv5 namespace is one fixed constant in the importer
+  - the auth database is reset and import_wp_users rerun, with no integer-to-UUID data migration
+- **R14** [P0] Login exchanges credentials for a token
+  - a login request with valid credentials returns a token
+  - invalid credentials return 401 with no token
+  - the README shows a curl command that obtains a token
+  - login is POST /api/auth/login with JSON username and password and returns JSON access_token, token_type and expires_in
+  - the token is an RS256 JWT with claims sub, role, iat, exp and iss
+  - the library core defines these claim names and the auth service imports them
+  - the token claim sub is the auth user's UUID string
+  - the signing key is read from AUTH_JWT_PRIVATE_KEY and login returns 503 when it is unset
+  - iss is ca-auth
+  - role is reader or editor
+  - iat and exp are integer epoch seconds with exp = iat + 900
 
 ## Do NOT build
 - O1 Migrating the WP admin and editor experience

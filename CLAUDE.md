@@ -8,6 +8,7 @@ When to use what:
 - A request touches an O item or goes beyond an R's acceptance: stop and ask; suggest `/mkit:change`. Do not build it.
 - Scope, a constraint or a tech choice is unclear: ask, or `/mkit:research`. Do not guess.
 - Design decisions (schema, API shape, service boundaries, libraries) are the user's: ask with a recommendation, then record it (`mkit apply "ANSWER Q<n> | text | Why: ..."`, By: delegated if they say "you decide").
+- A change with merges, migrations or waits between parts: `/mkit:run "<change>"`.
 - User corrects you: `/mkit:learn`. Said "triage": `/mkit:triage`. New project or big feature with no SPEC.md: suggest `/mkit:frame`.
 - You assumed something the spec doesn't cover: `mkit add "assumed X" --adjust`.
 

@@ -2,14 +2,16 @@
 
 Usage: docker compose run --rm auth python manage.py import_wp_users
 
-Re-runnable: users are upserted on their WP user ID, so a second run creates
-nothing and reports created / updated / unchanged. Every imported user's password
+Re-runnable: each WP user ID is turned into a UUIDv5 (fixed namespace below) that
+becomes the auth user's primary key, so a second run derives the same UUIDs, creates
+nothing and reports created / updated / unchanged. The WP ID is not stored. Every imported user's password
 is reset to the dev password from AUTH_DEV_PASSWORD (default "dev-password"; see
 README). WP password hashes are never read. Roles: WP administrator and editor
 map to "editor", everything else to "reader". Role changes apply at next login.
 """
 import os
 import re
+import uuid
 from collections import Counter
 
 import pymysql
@@ -21,6 +23,15 @@ from accounts.models import User
 
 EDITOR_WP_ROLES = {"administrator", "editor"}
 
+# Fixed namespace for deriving auth user IDs from WP user IDs. Never change it:
+# a different value would derive different UUIDs and re-create every user.
+WP_USER_NAMESPACE = uuid.UUID("6f1c4f0e-2b7a-4d8e-9c35-5a1e0b7d93c2")
+
+
+def user_uuid_from_wp_id(wp_user_id):
+    """Deterministic auth user ID for a WP user ID."""
+    return uuid.uuid5(WP_USER_NAMESPACE, str(wp_user_id))
+
 
 def role_from_capabilities(serialized):
     """Map a serialized PHP wp_capabilities value to a service role."""
@@ -29,7 +40,7 @@ def role_from_capabilities(serialized):
 
 
 class Command(BaseCommand):
-    help = "Import wp_users and roles into auth users (idempotent, keyed on WP user ID)."
+    help = "Import wp_users and roles into auth users (idempotent, UUIDv5 derived from the WP user ID)."
 
     def handle(self, *args, **options):
         prefix = os.environ.get("WORDPRESS_TABLE_PREFIX", "wp_")
@@ -67,9 +78,10 @@ class Command(BaseCommand):
                     "first_name": row["display_name"][:150],
                     "role": role_from_capabilities(row["caps"]),
                 }
-                user = User.objects.filter(wp_user_id=row["ID"]).first()
+                user_id = user_uuid_from_wp_id(row["ID"])
+                user = User.objects.filter(pk=user_id).first()
                 if user is None:
-                    user = User(wp_user_id=row["ID"], **values)
+                    user = User(id=user_id, **values)
                     user.set_password(password)
                     user.save()
                     counts["created"] += 1

@@ -9,7 +9,7 @@
 - [x] I7 2026-10-27 adjust: decision (By: user): R14 defaults: iss=ca-auth, sub=auth user id as string, role reader|editor, iat/exp integer epoch seconds with exp=iat+900, POST /api/auth/login, add PyJWT and cryptography to requirements -> R14
 - [x] I8 2026-10-27 adjust: assumed editor satisfies a reader requirement (role hierarchy) in ca_auth_lib.roles -> R15
 - [x] I9 2026-10-27 adjust: assumed verify_token also rejects tokens whose exp-iat != 900 and non-integer iat/exp; signing stays in auth service, not the lib -> R17
-- [ ] I10 2026-10-27 adjust: assumed R18 criterion 3 (main app protected endpoint imports from the library) is deferred to R16, which is not built; only criteria 1 and 2 verified
+- [x] I10 2026-10-27 adjust: assumed R18 criterion 3 (main app protected endpoint imports from the library) is deferred to R16, which is not built; only criteria 1 and 2 verified -> R18
 - [x] I11 2026-10-27 adjust: assumed missing AUTH_JWT_PRIVATE_KEY returns 503 on login (not 500/401) -> R14
 - [x] I12 2026-10-27 adjust: assumed R16: widened Brand.short_description column 255->500 (migration 0002) so the 500-char limit is storable -> R16
 - [x] I13 2026-10-27 adjust: assumed R16: brand detail page did not render short_description; added it as a paragraph under the hero heading -> R4

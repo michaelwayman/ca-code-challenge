@@ -195,6 +195,7 @@
   - Visual: at 1280px content is centred within the 1100px container
   - the brand detail page shows short_description
 - Source: brief §Pillar 1
+- Built: 2026-10-27
 
 ### R5. Brand listing endpoint returns card-ready rows
 - Priority: P0
@@ -207,6 +208,7 @@
   - industry is the name string or null
   - the top review snippet strips tags and collapses whitespace before 140 chars
 - Source: brief §Pillar 2
+- Built: 2026-10-27
 
 ### R6. Brand listing is filterable, sortable and paginated
 - Priority: P0
@@ -222,6 +224,7 @@
   - several industry slugs are OR-ed and an unknown slug matches nothing
   - invalid ordering or page returns 422
 - Source: brief §Pillar 2
+- Built: 2026-10-27
 
 ### R7. Top review snippet is defined and documented
 - Priority: P0
@@ -265,6 +268,7 @@
   - focus is a 3px blue outline
   - colour contrast is checked in the browser container, not jsdom
 - Source: brief §Pillar 3
+- Built: 2026-10-27
 
 ### R11. BrandList is responsive
 - Priority: P0
@@ -287,6 +291,7 @@
   - no component CSS outside frontend/scss
   - the temporary brandlist.css is folded into the SCSS tree
 - Source: brief §Pillar 4
+- Built: 2026-10-27
 
 ### R13. Auth service owns users and its own re-runnable import creates them from wp_users
 - Priority: P0
@@ -301,7 +306,10 @@
   - auth user IDs are UUIDs derived deterministically from the WP user ID (UUIDv5 with a fixed namespace constant in the importer)
   - the auth database stores no WP user ID
   - a rerun derives the same UUIDs and creates no duplicates
+  - the UUIDv5 namespace is one fixed constant in the importer
+  - the auth database is reset and import_wp_users rerun, with no integer-to-UUID data migration
 - Source: brief §Pillar 5, user choice reset passwords
+- Built: 2026-10-27
 
 ### R14. Login exchanges credentials for a token
 - Priority: P0
@@ -319,6 +327,7 @@
   - role is reader or editor
   - iat and exp are integer epoch seconds with exp = iat + 900
 - Source: brief §Pillar 5
+- Built: 2026-10-27
 
 ### R15. Auth service is the source of truth for at least two roles
 - Priority: P0
@@ -330,6 +339,7 @@
   - a fresh login after the change carries the new role
   - editor satisfies a reader requirement
 - Source: brief §Pillar 5
+- Built: 2026-10-27
 
 ### R16. Editor-only brand write endpoint in the main app
 - Priority: P0
@@ -348,6 +358,7 @@
   - whitespace is stripped before the 1-500 length check
   - the response is the full brand row
 - Source: brief §Pillar 5
+- Built: 2026-10-27
 
 ### R17. Token verification approach and auth outage behaviour are decided and documented
 - Priority: P0
@@ -358,6 +369,7 @@
   - the README states how a token is revoked or a role changed before expiry
   - verification rejects tokens where exp - iat is not 900 or iat or exp is not an integer
 - Source: brief §Pillar 5
+- Built: 2026-10-27
 
 ### R18. Shared library is an installable package used by both services
 - Priority: P0
@@ -367,6 +379,7 @@
   - pip show inside the main app container and the auth container lists it with that version
   - the main app protected endpoint imports its auth and permission code from the library with no copy in the app
 - Source: brief §Pillar 6
+- Built: 2026-10-27
 
 ### R19. Library has a framework-free core, tests run without Django and the library stays small
 - Priority: P0
@@ -931,3 +944,8 @@
 | 2026-10-27 | ALTER R16 | mkit |
 | 2026-10-27 | ALTER R4 | mkit |
 | 2026-10-27 | ALTER R22 | mkit |
+| 2026-10-27 | ALTER R13 | mkit |
+| 2026-10-27 | DONE R13 R14 | mkit |
+| 2026-10-27 | DONE R12 | mkit |
+| 2026-10-27 | DONE R4 R5 R6 R10 R15 R16 R17 R18 | mkit |
+| 2026-10-27 | RUN done: UUID auth users and triage follow-ups | mkit |

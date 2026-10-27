@@ -32,21 +32,21 @@ A18 [unvalidated] Logging in every imported user is cheap to test
 R1 [P0] Whole stack boots from a clean clone
 R2 [P0] Clean relational domain model for brands, reviews, industries and reviewer users
 R3 [P0] Re-runnable WP content migration command in the main app
-R4 [P0] Server-rendered homepage, brand detail and review detail pages
-R5 [P0] Brand listing endpoint returns card-ready rows
-R6 [P0] Brand listing is filterable, sortable and paginated
+R4 [P0 done] Server-rendered homepage, brand detail and review detail pages
+R5 [P0 done] Brand listing endpoint returns card-ready rows
+R6 [P0 done] Brand listing is filterable, sortable and paginated
 R7 [P0] Top review snippet is defined and documented
 R8 [P0] BrandList consumes the API with industry filter and sort control
 R9 [P0] BrandList handles loading, empty and error states
-R10 [P0] BrandList is keyboard accessible and semantic
+R10 [P0 done] BrandList is keyboard accessible and semantic
 R11 [P0] BrandList is responsive
-R12 [P0] SCSS source tree compiles to equivalent CSS
-R13 [P0] Auth service owns users and its own re-runnable import creates them from wp_users
-R14 [P0] Login exchanges credentials for a token
-R15 [P0] Auth service is the source of truth for at least two roles
-R16 [P0] Editor-only brand write endpoint in the main app
-R17 [P0] Token verification approach and auth outage behaviour are decided and documented
-R18 [P0] Shared library is an installable package used by both services
+R12 [P0 done] SCSS source tree compiles to equivalent CSS
+R13 [P0 done] Auth service owns users and its own re-runnable import creates them from wp_users
+R14 [P0 done] Login exchanges credentials for a token
+R15 [P0 done] Auth service is the source of truth for at least two roles
+R16 [P0 done] Editor-only brand write endpoint in the main app
+R17 [P0 done] Token verification approach and auth outage behaviour are decided and documented
+R18 [P0 done] Shared library is an installable package used by both services
 R19 [P0] Library has a framework-free core, tests run without Django and the library stays small
 R20 [P1] Tests cover migration idempotency, API behaviour and auth protection
 R21 [P0] README documents how to run, authenticate, test the library and migrate
