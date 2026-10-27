@@ -1,13 +1,14 @@
 from django.shortcuts import get_object_or_404, render
 
-from .models import Brand, Review
+from .models import Brand, Industry, Review
 
 HOME_REVIEW_COUNT = 10
 
 
 def home(request):
     reviews = Review.objects.select_related("brand", "reviewer")[:HOME_REVIEW_COUNT]
-    return render(request, "reviews/home.html", {"reviews": reviews})
+    industries = list(Industry.objects.values("name", "slug"))
+    return render(request, "reviews/home.html", {"reviews": reviews, "industries": industries})
 
 
 def brand_detail(request, slug):

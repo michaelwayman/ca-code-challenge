@@ -1,0 +1,4 @@
+/* Temporary hand-written styles for <BrandList />; move into the SCSS tree under R12. */
+.brand-list-controls { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 20px; }
+.brand-list-controls select { margin-left: 6px; padding: 6px 10px; }
+.brand-list blockquote { margin: 0; font-style: italic; }

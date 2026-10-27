@@ -1,9 +1,17 @@
 {% extends "reviews/base.html" %}
+{% load static %}
 {% block content %}
 <section class="hero">
   <div class="container">
     <h1>Honest reviews of the brands you rely on</h1>
     <p>Independent customer reviews of insurers, banks, internet providers, retailers and more.</p>
+  </div>
+</section>
+<section class="section">
+  <div class="container">
+    <div class="section-header"><h2>Brands</h2></div>
+    {{ industries|json_script:"brand-list-industries" }}
+    <div id="brand-list" data-api-url="{% url 'api:list_brands' %}" data-brand-url="{% url 'brand-detail' '__slug__' %}"></div>
   </div>
 </section>
 <section class="section">
@@ -17,3 +25,4 @@
   </div>
 </section>
 {% endblock %}
+{% block scripts %}<script src="{% static 'dist/brandlist.js' %}"></script>{% endblock %}
